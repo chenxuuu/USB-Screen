@@ -1,0 +1,3 @@
+(sym_lib_table
+  (lib (name USB_Screen_Library)(type Legacy)(uri ${KIPRJMOD}/USB_Screen_Library.lib)(options "")(descr ""))
+)
