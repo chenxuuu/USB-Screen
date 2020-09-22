@@ -38,10 +38,10 @@ void	mInitSTDIO( );                      //T1作为波特率发生器
 UINT8   CH554UART0RcvByte( );              //CH554 UART0查询方式接收一个字节
 void    CH554UART0SendByte(UINT8 SendDat); //CH554UART0发送一个字节
 
-void    CH554WDTModeSelect(UINT8 mode);     //CH554看门狗模式设置 
+void    CH554WDTModeSelect(UINT8 mode);     //CH554看门狗模式设置
 void    CH554WDTFeed(UINT8 tim);            //CH554看门狗喂狗
 
 // void CH554SoftReset( );                  //CH554软复位
 // void CH554USBDevWakeup( );               //CH554做USB设备唤醒主机
-//  
+//
 #endif

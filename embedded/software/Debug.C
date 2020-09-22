@@ -7,7 +7,7 @@
                      CH554主频修改、延时函数定义
                      串口0和串口1初始化
                      串口0和串口1的收发子函数
-                     看门狗初始化										 
+                     看门狗初始化
 *******************************************************************************/
 
 #include "CH552.H"
@@ -17,41 +17,41 @@
 * Function Name  : CfgFsys( )
 * Description    : CH554时钟选择和配置函数,默认使用Fsys 6MHz，FREQ_SYS可以通过
                    CLOCK_CFG配置得到，公式如下：
-                   Fsys = (Fosc * 4/(CLOCK_CFG & MASK_SYS_CK_SEL);具体时钟需要自己配置 
+                   Fsys = (Fosc * 4/(CLOCK_CFG & MASK_SYS_CK_SEL);具体时钟需要自己配置
 * Input          : None
 * Output         : None
 * Return         : None
-*******************************************************************************/ 
-void	CfgFsys( )  
+*******************************************************************************/
+void	CfgFsys( )
 {
-#if OSC_EN_XT	
+#if OSC_EN_XT
 		SAFE_MOD = 0x55;
 		SAFE_MOD = 0xAA;
     CLOCK_CFG |= bOSC_EN_XT;                          //使能外部晶振
-    CLOCK_CFG &= ~bOSC_EN_INT;                        //关闭内部晶振 
-#endif	
+    CLOCK_CFG &= ~bOSC_EN_INT;                        //关闭内部晶振
+#endif
 		SAFE_MOD = 0x55;
 		SAFE_MOD = 0xAA;
-#if FREQ_SYS == 24000000	
-		CLOCK_CFG = CLOCK_CFG & ~ MASK_SYS_CK_SEL | 0x06;  // 24MHz	
-#endif	
-#if FREQ_SYS == 16000000		
-		CLOCK_CFG = CLOCK_CFG & ~ MASK_SYS_CK_SEL | 0x05;  // 16MHz	
+#if FREQ_SYS == 24000000
+		CLOCK_CFG = CLOCK_CFG & ~ MASK_SYS_CK_SEL | 0x06;  // 24MHz
 #endif
-#if FREQ_SYS == 12000000		
+#if FREQ_SYS == 16000000
+		CLOCK_CFG = CLOCK_CFG & ~ MASK_SYS_CK_SEL | 0x05;  // 16MHz
+#endif
+#if FREQ_SYS == 12000000
 		CLOCK_CFG = CLOCK_CFG & ~ MASK_SYS_CK_SEL | 0x04;  // 12MHz
-#endif	
-#if FREQ_SYS == 6000000		
-		CLOCK_CFG = CLOCK_CFG & ~ MASK_SYS_CK_SEL | 0x03;  // 6MHz	
-#endif	
-#if FREQ_SYS == 3000000	
-		CLOCK_CFG = CLOCK_CFG & ~ MASK_SYS_CK_SEL | 0x02;  // 3MHz	
 #endif
-#if FREQ_SYS == 750000	
+#if FREQ_SYS == 6000000
+		CLOCK_CFG = CLOCK_CFG & ~ MASK_SYS_CK_SEL | 0x03;  // 6MHz
+#endif
+#if FREQ_SYS == 3000000
+		CLOCK_CFG = CLOCK_CFG & ~ MASK_SYS_CK_SEL | 0x02;  // 3MHz
+#endif
+#if FREQ_SYS == 750000
 		CLOCK_CFG = CLOCK_CFG & ~ MASK_SYS_CK_SEL | 0x01;  // 750KHz
 #endif
-#if FREQ_SYS == 187500	
-		CLOCK_CFG = CLOCK_CFG & ~ MASK_SYS_CK_SEL | 0x00;  // 187.5KHz	
+#if FREQ_SYS == 187500
+		CLOCK_CFG = CLOCK_CFG & ~ MASK_SYS_CK_SEL | 0x00;  // 187.5KHz
 #endif
 		SAFE_MOD = 0x00;
 }
@@ -62,7 +62,7 @@ void	CfgFsys( )
 * Input          : UNIT16 n
 * Output         : None
 * Return         : None
-*******************************************************************************/ 
+*******************************************************************************/
 void	mDelayuS( UINT16 n )  // 以uS为单位延时
 {
 #ifdef	FREQ_SYS
@@ -120,7 +120,7 @@ void	mDelaymS( UINT16 n )                                                  // 以
 #endif
 		-- n;
 	}
-}                                         
+}
 
 /*******************************************************************************
 * Function Name  : CH554UART0Alter()
@@ -145,7 +145,7 @@ void CH554UART0Alter()
 void	mInitSTDIO( )
 {
     UINT32 x;
-    UINT8 x2; 
+    UINT8 x2;
 
     SM0 = 0;
     SM1 = 1;
@@ -154,7 +154,7 @@ void	mInitSTDIO( )
     RCLK = 0;                                                                  //UART0接收时钟
     TCLK = 0;                                                                  //UART0发送时钟
     PCON |= SMOD;
-    x = 10 * FREQ_SYS / UART0_BUAD / 16;                                       //如果更改主频，注意x的值不要溢出                            
+    x = 10 * FREQ_SYS / UART0_BUAD / 16;                                       //如果更改主频，注意x的值不要溢出
     x2 = x % 10;
     x /= 10;
     if ( x2 >= 5 ) x ++;                                                       //四舍五入
@@ -198,7 +198,7 @@ void CH554UART0SendByte(UINT8 SendDat)
 /*******************************************************************************
 * Function Name  : CH554WDTModeSelect(UINT8 mode)
 * Description    : CH554看门狗模式选择
-* Input          : UINT8 mode 
+* Input          : UINT8 mode
                    0  timer
                    1  watchDog
 * Output         : None
@@ -227,7 +227,7 @@ void CH554WDTModeSelect(UINT8 mode)
 *******************************************************************************/
 void CH554WDTFeed(UINT8 tim)
 {
-   WDOG_COUNT = tim;                                                             //看门狗计数器赋值	
+   WDOG_COUNT = tim;                                                             //看门狗计数器赋值
 }
 
 // /*******************************************************************************
@@ -256,10 +256,10 @@ void CH554WDTFeed(UINT8 tim)
 //#ifdef Fullspeed
 //	UDEV_CTRL |= bUD_LOW_SPEED;
 //	mDelaymS(2);
-//	UDEV_CTRL &= ~bUD_LOW_SPEED;		
+//	UDEV_CTRL &= ~bUD_LOW_SPEED;
 //#else
 //	UDEV_CTRL &= ~bUD_LOW_SPEED;
 //	mDelaymS(2);
-//	UDEV_CTRL |= bUD_LOW_SPEED;	
-//#endif	
+//	UDEV_CTRL |= bUD_LOW_SPEED;
+//#endif
 // }
