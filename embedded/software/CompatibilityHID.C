@@ -9,8 +9,18 @@
 
 #include "CH552.H"
 #include "Debug.H"
+#include "SPI.H"
 #include <stdio.h>
 #include <string.h>
+
+sbit spi_reset = P3^2;
+sbit spi_cs = P1^4;
+sbit spi_dc = P3^1;
+sbit spi_led = P3^4;
+sbit led1=P3^0;
+sbit led2=P3^3;
+sbit led3=P1^1;
+#define USE_HORIZONTAL = 0
 
 #define Fullspeed               1
 
@@ -392,11 +402,11 @@ void    DeviceInterrupt( void ) interrupt INT_NO_USB using 1                    
             {
                 if(Ep0Buffer[0])
                 {
-                    printf("Light on Num Lock LED!\n");
+                    //printf("Light on Num Lock LED!\n");
                 }
                 else if(Ep0Buffer[0] == 0)
                 {
-                    printf("Light off Num Lock LED!\n");
+                    //printf("Light off Num Lock LED!\n");
                 }
             }
             UEP0_CTRL ^= bUEP_R_TOG;                                     //同步标志位翻转
@@ -423,7 +433,7 @@ void    DeviceInterrupt( void ) interrupt INT_NO_USB using 1                    
         if ( USB_MIS_ST & bUMS_SUSPEND )                                             //挂起
         {
 #ifdef DE_PRINTF
-            printf( "zz" );                                                          //睡眠状态
+            //printf( "zz" );                                                          //睡眠状态
 #endif
 //             while ( XBUS_AUX & bUART0_TX )
 //             {
@@ -444,36 +454,175 @@ void    DeviceInterrupt( void ) interrupt INT_NO_USB using 1                    
     }
 }
 
+void LCD_WR_DATA8(UINT8 dat)
+{
+    spi_dc = 1;
+    spi_cs = 0;
+    CH554SPIMasterWrite(dat);
+    spi_cs = 1;
+}
+void LCD_WR_DATA(UINT16 dat)
+{
+    spi_dc = 1;
+    spi_cs = 0;
+    CH554SPIMasterWrite(dat>>8);
+    spi_cs = 1;
+    spi_cs = 0;
+    CH554SPIMasterWrite(dat);
+    spi_cs = 1;
+}
+void LCD_WR_REG(UINT8 dat)
+{
+    spi_dc = 0;
+    spi_cs = 0;
+    CH554SPIMasterWrite(dat);
+    spi_cs = 1;
+    spi_dc = 1;
+}
+void LCD_Address_Set(UINT16 x1,UINT16 y1,UINT16 x2,UINT16 y2)
+{
+	LCD_WR_REG(0x2a);//列地址设置
+	LCD_WR_DATA(x1);
+	LCD_WR_DATA(x2);
+	LCD_WR_REG(0x2b);//行地址设置
+	LCD_WR_DATA(y1);
+	LCD_WR_DATA(y2);
+	LCD_WR_REG(0x2c);//储存器写
+}
+
 main()
 {
     UINT8 i;
+    led1=0;led2=0;led3=0;
     CfgFsys( );                                                           //CH559时钟选择配置
     mDelaymS(5);                                                          //修改主频等待内部晶振稳定,必加
-    mInitSTDIO( );                                                        //串口0初始化
-#ifdef DE_PRINTF
-    printf("start ...\n");
-#endif
-    for(i=0; i<64; i++)                                                   //准备演示数据
+    //mInitSTDIO( );                                                        //串口0初始化
+// #ifdef DE_PRINTF
+//     //printf("start ...\n");
+// #endif
+//     for(i=0; i<64; i++)                                                   //准备演示数据
+//     {
+//         UserEp2Buf[i] = i;
+//     }
+//     USBDeviceInit();                                                      //USB设备模式初始化
+//     EA = 1;                                                               //允许单片机中断
+//     UEP1_T_LEN = 0;                                                       //预使用发送长度一定要清空
+//     UEP2_T_LEN = 0;                                                       //预使用发送长度一定要清空
+//     FLAG = 0;
+//     Ready = 0;
+
+    spi_reset = 0;
+    spi_cs = 1;
+    spi_dc = 1;
+    SPIMasterModeSet(3);
+    SPI_CK_SET(4);
+    mDelaymS(100);
+    spi_reset = 1;
+    spi_led = 1;
+	LCD_WR_REG(0x11); //Sleep out
+	mDelaymS(120);              //Delay 120ms
+	//************* Start Initial Sequence **********//
+	LCD_WR_REG(0x36);
+	LCD_WR_DATA8(0x00);
+
+	LCD_WR_REG(0x3A);
+	LCD_WR_DATA8(0x05);
+
+	LCD_WR_REG(0xB2);
+	LCD_WR_DATA8(0x0C);
+	LCD_WR_DATA8(0x0C);
+	LCD_WR_DATA8(0x00);
+	LCD_WR_DATA8(0x33);
+	LCD_WR_DATA8(0x33);
+
+	LCD_WR_REG(0xB7);
+	LCD_WR_DATA8(0x35);
+
+	LCD_WR_REG(0xBB);
+	LCD_WR_DATA8(0x32); //Vcom=1.35V
+
+	LCD_WR_REG(0xC2);
+	LCD_WR_DATA8(0x01);
+
+	LCD_WR_REG(0xC3);
+	LCD_WR_DATA8(0x15); //GVDD=4.8V  颜色深度
+
+	LCD_WR_REG(0xC4);
+	LCD_WR_DATA8(0x20); //VDV, 0x20:0v
+
+	LCD_WR_REG(0xC6);
+	LCD_WR_DATA8(0x0F); //0x0F:60Hz
+
+	LCD_WR_REG(0xD0);
+	LCD_WR_DATA8(0xA4);
+	LCD_WR_DATA8(0xA1);
+
+	LCD_WR_REG(0xE0);
+	LCD_WR_DATA8(0xD0);
+	LCD_WR_DATA8(0x08);
+	LCD_WR_DATA8(0x0E);
+	LCD_WR_DATA8(0x09);
+	LCD_WR_DATA8(0x09);
+	LCD_WR_DATA8(0x05);
+	LCD_WR_DATA8(0x31);
+	LCD_WR_DATA8(0x33);
+	LCD_WR_DATA8(0x48);
+	LCD_WR_DATA8(0x17);
+	LCD_WR_DATA8(0x14);
+	LCD_WR_DATA8(0x15);
+	LCD_WR_DATA8(0x31);
+	LCD_WR_DATA8(0x34);
+
+	LCD_WR_REG(0xE1);
+	LCD_WR_DATA8(0xD0);
+	LCD_WR_DATA8(0x08);
+	LCD_WR_DATA8(0x0E);
+	LCD_WR_DATA8(0x09);
+	LCD_WR_DATA8(0x09);
+	LCD_WR_DATA8(0x15);
+	LCD_WR_DATA8(0x31);
+	LCD_WR_DATA8(0x33);
+	LCD_WR_DATA8(0x48);
+	LCD_WR_DATA8(0x17);
+	LCD_WR_DATA8(0x14);
+	LCD_WR_DATA8(0x15);
+	LCD_WR_DATA8(0x31);
+	LCD_WR_DATA8(0x34);
+	LCD_WR_REG(0x21);
+
+	LCD_WR_REG(0x29);
+
     {
-        UserEp2Buf[i] = i;
+        UINT16 i,j,xsta=0,ysta=0,xend=240,yend=240;
+        LCD_Address_Set(xsta,ysta,xend-1,yend-1);//设置显示范围
+        for(i=ysta;i<yend;i++)
+        {
+            for(j=xsta;j<xend;j++)
+            {
+                LCD_WR_DATA(0xffff);
+            }
+        }
     }
-    USBDeviceInit();                                                      //USB设备模式初始化
-    EA = 1;                                                               //允许单片机中断
-    UEP1_T_LEN = 0;                                                       //预使用发送长度一定要清空
-    UEP2_T_LEN = 0;                                                       //预使用发送长度一定要清空
-    FLAG = 0;
-    Ready = 0;
+
     while(1)
     {
-        if(Ready && (Ep2InKey==0))
-        {
-			while( Endp2Busy );                                            //如果忙（上一包数据没有传上去），则等待。
-			Endp2Busy = 1;                                                 //设置为忙状态
-            Enp2BlukIn( );
-            mDelaymS( 100 );
-        }
-        mDelaymS( 100 );                                                 //模拟单片机做其它事
+        led1=0;led2=1;led3=0;
+        mDelaymS(500);
+        led1=1;led2=0;led3=1;
+        mDelaymS(500);
     }
+
+    // while(1)
+    // {
+    //     if(Ready && (Ep2InKey==0))
+    //     {
+	// 		while( Endp2Busy );                                            //如果忙（上一包数据没有传上去），则等待。
+	// 		Endp2Busy = 1;                                                 //设置为忙状态
+    //         Enp2BlukIn( );
+    //         mDelaymS( 100 );
+    //     }
+    //     mDelaymS( 100 );                                                 //模拟单片机做其它事
+    // }
 
 //spi示例代码里面的
 //     UINT8 ret,i=0;
