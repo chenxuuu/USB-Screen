@@ -192,6 +192,12 @@ void    DeviceInterrupt( void ) interrupt INT_NO_USB using 1                    
                 len = USB_RX_LEN;                                               //接收数据长度，数据从Ep2Buffer首地址开始存放
                 type = 0;//存储命令类型
                 count = 0;//存储剩余字节数
+                /*
+                    hid --> spi 协议
+                    头：命令类型  后面跟的字节长度
+                        1bit     7bit
+                    然后接上后面的数据
+                */
                 for ( i = 0; i < len; i ++ )
                 {
                     if(count==0)
