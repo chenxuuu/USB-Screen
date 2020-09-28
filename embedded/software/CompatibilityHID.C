@@ -20,6 +20,37 @@ sbit spi_led = P3^4;
 sbit led1=P3^0;
 sbit led2=P3^3;
 sbit led3=P1^1;
+
+void LCD_WR_DATA8(UINT8 dat)
+{
+    spi_cs = 0;
+    CH554SPIMasterWrite(dat);
+    spi_cs = 1;
+}
+void LCD_WR_DATA(UINT16 dat)
+{
+    LCD_WR_DATA8(dat>>8);
+    LCD_WR_DATA8(dat);
+}
+void LCD_WR_REG(UINT8 dat)
+{
+    spi_dc = 0;
+    spi_cs = 0;
+    CH554SPIMasterWrite(dat);
+    spi_cs = 1;
+    spi_dc = 1;
+}
+void LCD_Address_Set(UINT16 x1,UINT16 y1,UINT16 x2,UINT16 y2)
+{
+	LCD_WR_REG(0x2a);//列地址设置
+	LCD_WR_DATA(x1);
+	LCD_WR_DATA(x2);
+	LCD_WR_REG(0x2b);//行地址设置
+	LCD_WR_DATA(y1);
+	LCD_WR_DATA(y2);
+	LCD_WR_REG(0x2c);//储存器写
+}
+
 #define USE_HORIZONTAL = 0
 
 #define Fullspeed               1
@@ -144,7 +175,7 @@ void Enp2BlukIn( )
 *******************************************************************************/
 void    DeviceInterrupt( void ) interrupt INT_NO_USB using 1                    //USB中断服务程序,使用寄存器组1
 {
-    UINT8 len,i;
+    UINT8 len,i,type,count;
     if(UIF_TRANSFER)                                                            //USB传输完成标志
     {
         switch (USB_INT_ST & (MASK_UIS_TOKEN | MASK_UIS_ENDP))
@@ -159,9 +190,25 @@ void    DeviceInterrupt( void ) interrupt INT_NO_USB using 1                    
             if ( U_TOG_OK )                                                     // 不同步的数据包将丢弃
             {
                 len = USB_RX_LEN;                                               //接收数据长度，数据从Ep2Buffer首地址开始存放
+                type = 0;//存储命令类型
+                count = 0;//存储剩余字节数
                 for ( i = 0; i < len; i ++ )
                 {
-                    Ep2Buffer[MAX_PACKET_SIZE+i] = Ep2Buffer[i] ^ 0xFF;         // OUT数据取反到IN由计算机验证
+                    if(count==0)
+                    {
+                        count = Ep2Buffer[i] & 0x7F;
+                        type = Ep2Buffer[i] >> 7;
+                        Ep2Buffer[MAX_PACKET_SIZE+i] = 0x00;
+                    }
+                    else
+                    {
+                        if(type)//1表示data
+                            LCD_WR_DATA8(Ep2Buffer[i]);
+                        else//0表示命令
+                            LCD_WR_REG(Ep2Buffer[i]);
+                        count--;
+                        Ep2Buffer[MAX_PACKET_SIZE+i] = 0xcc;
+                    }
                 }
                 UEP2_T_LEN = len;
                 UEP2_CTRL = UEP2_CTRL & ~ MASK_UEP_T_RES | UEP_T_RES_ACK;       // 允许上传
@@ -454,41 +501,7 @@ void    DeviceInterrupt( void ) interrupt INT_NO_USB using 1                    
     }
 }
 
-void LCD_WR_DATA8(UINT8 dat)
-{
-    spi_dc = 1;
-    spi_cs = 0;
-    CH554SPIMasterWrite(dat);
-    spi_cs = 1;
-}
-void LCD_WR_DATA(UINT16 dat)
-{
-    spi_dc = 1;
-    spi_cs = 0;
-    CH554SPIMasterWrite(dat>>8);
-    spi_cs = 1;
-    spi_cs = 0;
-    CH554SPIMasterWrite(dat);
-    spi_cs = 1;
-}
-void LCD_WR_REG(UINT8 dat)
-{
-    spi_dc = 0;
-    spi_cs = 0;
-    CH554SPIMasterWrite(dat);
-    spi_cs = 1;
-    spi_dc = 1;
-}
-void LCD_Address_Set(UINT16 x1,UINT16 y1,UINT16 x2,UINT16 y2)
-{
-	LCD_WR_REG(0x2a);//列地址设置
-	LCD_WR_DATA(x1);
-	LCD_WR_DATA(x2);
-	LCD_WR_REG(0x2b);//行地址设置
-	LCD_WR_DATA(y1);
-	LCD_WR_DATA(y2);
-	LCD_WR_REG(0x2c);//储存器写
-}
+
 
 main()
 {
@@ -500,22 +513,20 @@ main()
 // #ifdef DE_PRINTF
 //     //printf("start ...\n");
 // #endif
-//     for(i=0; i<64; i++)                                                   //准备演示数据
-//     {
-//         UserEp2Buf[i] = i;
-//     }
-//     USBDeviceInit();                                                      //USB设备模式初始化
-//     EA = 1;                                                               //允许单片机中断
-//     UEP1_T_LEN = 0;                                                       //预使用发送长度一定要清空
-//     UEP2_T_LEN = 0;                                                       //预使用发送长度一定要清空
-//     FLAG = 0;
-//     Ready = 0;
+    for(i=0; i<64; i++)                                                   //准备演示数据
+    {
+        UserEp2Buf[i] = i;
+    }
+    USBDeviceInit();                                                      //USB设备模式初始化
+    EA = 1;                                                               //允许单片机中断
+    UEP1_T_LEN = 0;                                                       //预使用发送长度一定要清空
+    UEP2_T_LEN = 0;                                                       //预使用发送长度一定要清空
+    FLAG = 0;
+    Ready = 0;
 
     SPIMasterModeSet(3);
     SPI_CK_SET(4);
-    spi_reset = 0;
-    spi_cs = 1;
-    spi_dc = 1;
+    spi_reset = 0;spi_cs = 1;spi_dc = 1;
     mDelaymS(100);
     spi_reset = 1;
     mDelaymS(100);
@@ -601,20 +612,31 @@ main()
         {
             for(j=xsta;j<xend;j++)
             {
-                if(j%2)
-                    LCD_WR_DATA(0xffff);
-                else
-                    LCD_WR_DATA(0x0);
+                LCD_WR_DATA(0x0000);
             }
         }
     }
 
+// mDelaymS(100);
+//     {
+//         UINT16 i,j,xsta=0,ysta=0,xend=2,yend=2;
+//         LCD_Address_Set(xsta,ysta,xend-1,yend-1);//设置显示范围
+//         for(i=ysta;i<yend;i++)
+//         {
+//             for(j=xsta;j<xend;j++)
+//             {
+//                 LCD_WR_DATA(0xffff);
+//             }
+//         }
+//     }
+
     while(1)
     {
-        led1=0;led2=1;led3=0;
-        mDelaymS(500);
-        led1=1;led2=0;led3=1;
-        mDelaymS(500);
+        mDelaymS(100);
+        // led1=0;led2=1;led3=0;
+        // mDelaymS(500);
+        // led1=1;led2=0;led3=1;
+        // mDelaymS(500);
     }
 
     // while(1)
