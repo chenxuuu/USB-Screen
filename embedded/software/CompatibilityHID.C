@@ -511,14 +511,16 @@ main()
 //     FLAG = 0;
 //     Ready = 0;
 
+    SPIMasterModeSet(3);
+    SPI_CK_SET(4);
     spi_reset = 0;
     spi_cs = 1;
     spi_dc = 1;
-    SPIMasterModeSet(3);
-    SPI_CK_SET(4);
     mDelaymS(100);
     spi_reset = 1;
+    mDelaymS(100);
     spi_led = 1;
+    mDelaymS(100);
 	LCD_WR_REG(0x11); //Sleep out
 	mDelaymS(120);              //Delay 120ms
 	//************* Start Initial Sequence **********//
@@ -599,7 +601,10 @@ main()
         {
             for(j=xsta;j<xend;j++)
             {
-                LCD_WR_DATA(0xffff);
+                if(j%2)
+                    LCD_WR_DATA(0xffff);
+                else
+                    LCD_WR_DATA(0x0);
             }
         }
     }
