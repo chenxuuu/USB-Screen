@@ -12,6 +12,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using USB_Screen.Dev;
 
 namespace USB_Screen
 {
@@ -27,18 +28,30 @@ namespace USB_Screen
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            var r = Hid.Send(new byte[]
+            UInt16 x = 4;
+            UInt16 y = 4;
+
+            List<byte> data = new List<byte>();
+
+            Screen.AddData(data, new List<byte>() { 0x2a }, true);
+            Screen.AddData(data, new List<byte>() { 0, 0 });
+            Screen.AddData(data, new List<byte>() { (byte)((x - 1) >> 8), (byte)((x - 1) % 256) });
+            Screen.AddData(data, new List<byte>() { 0x2b }, true);
+            Screen.AddData(data, new List<byte>() { 0, 0 });
+            Screen.AddData(data, new List<byte>() { (byte)((y - 1) >> 8), (byte)((y - 1) % 256) });
+            Screen.AddData(data, new List<byte>() { 0x2c }, true);
+
+            List<byte> sd = new List<byte>();
+            for (int i = 0; i < x; i++)
+            for (int j = 0; j < y; j++)
             {
-                0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
-                0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
-                0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
-                0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
-                0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
-                0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
-                0x00,0x00,0x01,0x00
-            });
-            //回复最后一位应为cc
-            MessageBox.Show(Hid.ByteToHexString(r));
+                sd.Add(0xff);
+                sd.Add(0xff);
+            }
+            Screen.AddData(data, sd);
+
+            var r = Hid.SendBytes(data.ToArray());
+            //MessageBox.Show(r.ToString());
         }
     }
 }

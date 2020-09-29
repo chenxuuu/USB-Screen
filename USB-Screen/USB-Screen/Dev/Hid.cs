@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using HidLibrary;
 
-namespace USB_Screen
+namespace USB_Screen.Dev
 {
     class Hid
     {
@@ -17,12 +17,46 @@ namespace USB_Screen
         public static bool HasDevice() => HidDevices.Enumerate(0x2333, 0x2434).ToArray().Length > 0;
 
         /// <summary>
+        /// 发送多字节数据
+        /// </summary>
+        /// <param name="data">数据</param>
+        /// <returns>是否成功</returns>
+        public static bool SendBytes(byte[] data)
+        {
+            List<byte> d = new List<byte>(data);
+            while (d.Count > 64)
+            {
+                Debug.WriteLine($"data to send length {d.Count}");
+                var temp = d.GetRange(0, 64);
+                d.RemoveRange(0,64);
+                var result = Send(temp.ToArray());
+                Debug.WriteLine($"data received length {result.Length}");
+                if (result.Length != 64)
+                    return false;
+            }
+
+            if (d.Count > 0)
+            {
+                var temp = d.GetRange(0, d.Count);
+                for (int i= d.Count; i<64;i++)
+                    temp.Add(0);
+                var result = Send(temp.ToArray());
+                if (result.Length != 64)
+                    return false;
+            }
+
+            return true;
+        }
+
+
+        /// <summary>
         /// 发一包数据
         /// </summary>
         /// <param name="data">数据</param>
         /// <returns>返回的数据</returns>
         public static byte[] Send(byte [] data)
         {
+            Debug.WriteLine($"pack data {ByteToHexString(data)}");
             var temp = new byte[data.Length + 1];
             temp[0] = 0;
             for (int i = 1; i < data.Length + 1; i++)
