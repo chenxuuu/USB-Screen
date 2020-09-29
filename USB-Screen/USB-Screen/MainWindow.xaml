@@ -7,6 +7,6 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <WrapPanel>
-        <Button Content="111"/>
+        <Button Content="111" Click="Button_Click"/>
     </WrapPanel>
 </Window>
