@@ -8,8 +8,14 @@ using HidLibrary;
 
 namespace USB_Screen.Dev
 {
+    [PropertyChanged.AddINotifyPropertyChangedInterface]
     class Hid
     {
+        /// <summary>
+        /// 发送进度
+        /// </summary>
+        public int Progress { get; set; } = 0;
+
         /// <summary>
         /// 是否存在设备，目前仅支持单设备
         /// </summary>
@@ -21,18 +27,18 @@ namespace USB_Screen.Dev
         /// </summary>
         /// <param name="data">数据</param>
         /// <returns>是否成功</returns>
-        public static bool SendBytes(byte[] data)
+        public bool SendBytes(byte[] data)
         {
+            Progress = 0;//进度清零
             List<byte> d = new List<byte>(data);
             while (d.Count > 64)
             {
-                Debug.WriteLine($"data to send length {d.Count}");
                 var temp = d.GetRange(0, 64);
                 d.RemoveRange(0,64);
                 var result = Send(temp.ToArray());
-                Debug.WriteLine($"data received length {result.Length}");
                 if (result.Length != 64)
                     return false;
+                Progress = 100 - (int)(100 * (double)d.Count / data.Length);//更新进度
             }
 
             if (d.Count > 0)
@@ -43,8 +49,10 @@ namespace USB_Screen.Dev
                 var result = Send(temp.ToArray());
                 if (result.Length != 64)
                     return false;
+                Progress = 100 - (int)(100 * (double)d.Count / data.Length);//更新进度
             }
 
+            Progress = 100;//更新进度
             return true;
         }
 
@@ -54,7 +62,7 @@ namespace USB_Screen.Dev
         /// </summary>
         /// <param name="data">数据</param>
         /// <returns>返回的数据</returns>
-        public static byte[] Send(byte [] data)
+        private static byte[] Send(byte [] data)
         {
             Debug.WriteLine($"pack data {ByteToHexString(data)}");
             var temp = new byte[data.Length + 1];

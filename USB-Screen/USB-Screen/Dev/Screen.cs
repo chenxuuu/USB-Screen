@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -27,13 +27,11 @@ namespace USB_Screen.Dev
                 {
                     if (len > data.Count)
                         len = data.Count;
-                    Debug.WriteLine($"to store len {len}");
                     list.Add((byte)((command ? 0x00 : 0x80) + len));
                     list.AddRange(data.GetRange(0,len));
                     data.RemoveRange(0,len);
                 }
             }
-            Debug.WriteLine($"to send len {list.Count}");
         }
     }
 }

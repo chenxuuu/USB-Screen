@@ -5,8 +5,10 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:USB_Screen"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <WrapPanel>
+        Title="MainWindow" Height="450" Width="800"
+        Loaded="Window_Loaded">
+    <WrapPanel Orientation="Vertical" HorizontalAlignment="Center" Margin="10">
         <Button Content="111" Click="Button_Click"/>
+        <ProgressBar x:Name="progressBar" Value="{Binding Progress}" Height="20" Width="200" Margin="10"/>
     </WrapPanel>
 </Window>
