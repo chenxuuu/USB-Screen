@@ -42,10 +42,8 @@ namespace USB_Screen
 
 
             TestButton.Click += Button_Click;
-        }
 
-        private void Window_Loaded(object sender, RoutedEventArgs e)
-        {
+
             progressBar.DataContext = hid;
         }
 
@@ -69,19 +67,19 @@ namespace USB_Screen
                     Screen.AddData(data, new List<byte>() { 0, (byte)(y - 1) });
                     Screen.AddData(data, new List<byte>() { 0x2c }, true);
 
-                    Bitmap img = new Bitmap(@"1.png");
-
                     List<byte> sd = new List<byte>();
-                    for (int i = 0; i < x; i++)
-                        for (int j = 0; j < y; j++)
-                        {
-                            var color = img.GetPixel(y - i - 1, j);
-                            //rrrr rggg gggb bbbb
-                            var rgb565 = color.R / 8 * 2048 + color.G / 4 * 32 + color.B / 8;
-                            sd.Add((byte)(rgb565 / 256));
-                            sd.Add((byte)(rgb565 % 256));
-                        }
-
+                    using (Bitmap img = new Bitmap(@"1.png"))
+                    {
+                        for (int i = 0; i < x; i++)
+                            for (int j = 0; j < y; j++)
+                            {
+                                var color = img.GetPixel(y - i - 1, j);
+                                //rrrr rggg gggb bbbb
+                                var rgb565 = color.R / 8 * 2048 + color.G / 4 * 32 + color.B / 8;
+                                sd.Add((byte)(rgb565 / 256));
+                                sd.Add((byte)(rgb565 % 256));
+                            }
+                    }
 
                     //MessageBox.Show(sd.Count.ToString());
                     Screen.AddData(data, sd);
