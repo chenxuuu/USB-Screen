@@ -36,6 +36,10 @@ namespace USB_Screen
             TitleBar.MouseMove += (object sender, MouseEventArgs e) => { if (e.LeftButton == MouseButtonState.Pressed) this.DragMove(); };
             // 注册窗口关闭按钮
             AppExit.Click += delegate { this.Close(); };
+
+
+
+            TestButton.Click += Button_Click;
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)

@@ -48,7 +48,7 @@
 			</StackPanel>
 		</Grid>
 		<WrapPanel Background="#DDFFFFFF">
-			<Button Content="111" Click="Button_Click"/>
+			<Button x:Name="TestButton" Content="111"/>
 		</WrapPanel>
 	</DockPanel>
 </Window>
