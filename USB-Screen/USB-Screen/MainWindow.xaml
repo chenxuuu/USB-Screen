@@ -5,8 +5,50 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:USB_Screen"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <WrapPanel>
-        <Button Content="111" Click="Button_Click"/>
-    </WrapPanel>
+        WindowStartupLocation="CenterScreen" WindowStyle="None" ResizeMode="NoResize" AllowsTransparency="True"
+        BorderThickness="2,1,2,2" Height="218" Width="404" Background="#CC000000" BorderBrush ="#20666666"
+        Title="USB-Screen">
+	<Window.Resources>
+		<ResourceDictionary>
+			<Style x:Key="ExitButton" TargetType="{x:Type Button}">
+				<Setter Property="Opacity" Value="0.5"/>
+				<Setter Property="Foreground" Value="White" />
+				<Setter Property="Background" Value="Transparent" />
+				<Setter Property="Focusable" Value="False"/>
+				<Setter Property="Width" Value="30"/>
+				<Setter Property="Height" Value="30"/>
+				<Setter Property="Template">
+					<Setter.Value>
+						<ControlTemplate TargetType="{x:Type Button}">
+							<Grid VerticalAlignment="Center" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}">
+								<Border Background="{TemplateBinding Background}">
+									<Canvas VerticalAlignment="Center" HorizontalAlignment="Center">
+										<Line StrokeThickness="2" Stroke="White" X1="-5" Y1="-5" X2="5" Y2="5"></Line>
+										<Line StrokeThickness="2" Stroke="White" X1="-5" Y1="5" X2="5" Y2="-5"></Line>
+									</Canvas>
+								</Border>
+							</Grid>
+							<ControlTemplate.Triggers>
+								<Trigger Property="IsMouseOver"  Value="True">
+									<Setter Property="Opacity" Value="1"/>
+									<Setter Property="Background" Value="#20FFFFFF"/>
+								</Trigger>
+							</ControlTemplate.Triggers>
+						</ControlTemplate>
+					</Setter.Value>
+				</Setter>
+			</Style>
+		</ResourceDictionary>
+    </Window.Resources>
+	<DockPanel>
+		<Grid x:Name="TitleBar" DockPanel.Dock="Top" Height="30" Background="#7F666666">
+			<TextBlock x:Name="TitleName" Text="USB-Screen" Foreground="White" Opacity=".75" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="10,0"/>
+			<StackPanel x:Name="TitleMenu" HorizontalAlignment="Right" Orientation="Horizontal">
+				<Button x:Name="AppExit" Style="{StaticResource ExitButton}"/>
+			</StackPanel>
+		</Grid>
+		<WrapPanel Background="#DDFFFFFF">
+			<Button Content="111" Click="Button_Click"/>
+		</WrapPanel>
+	</DockPanel>
 </Window>

@@ -28,6 +28,14 @@ namespace USB_Screen
         public MainWindow()
         {
             InitializeComponent();
+            // 当窗口后台运行时半透明显示
+            this.Deactivated += delegate { this.Opacity = 0.8; };
+            // 当窗口前台运行时取消半透明
+            this.Activated += delegate { this.Opacity = 1; };
+            // 注册窗口移动事件
+            TitleBar.MouseMove += (object sender, MouseEventArgs e) => { if (e.LeftButton == MouseButtonState.Pressed) this.DragMove(); };
+            // 注册窗口关闭按钮
+            AppExit.Click += delegate { this.Close(); };
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
