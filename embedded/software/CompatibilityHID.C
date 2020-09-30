@@ -7,11 +7,18 @@
 * Description        : CH554模拟HID兼容设备，支持中断上下传，支持控制端点上下传，支持设置全速，低速
 *******************************************************************************/
 
+//垃圾屏没法用硬件spi，太快了
+#define SOFT_SPI
+
 #include "CH552.H"
 #include "Debug.H"
+#ifdef SOFT_SPI
+#else
 #include "SPI.H"
+#endif
 #include <stdio.h>
 #include <string.h>
+
 
 sbit spi_reset = P3^2;
 sbit spi_cs = P1^4;
@@ -21,10 +28,37 @@ sbit led1=P3^0;
 sbit led2=P3^3;
 sbit led3=P1^1;
 
+#ifdef SOFT_SPI
+sbit sclk = P1^7;
+sbit mosi = P1^5;
+#endif
+
 void LCD_WR_DATA8(UINT8 dat)
 {
+
     spi_cs = 0;
-    CH554SPIMasterWrite(dat);
+    //
+    #ifdef SOFT_SPI
+    {
+        UINT8 i;
+        for(i=0;i<8;i++)
+        {
+            sclk=0;
+            if(dat&0x80)
+            {
+                mosi=1;
+            }
+            else
+            {
+                mosi=0;
+            }
+            sclk=1;
+            dat<<=1;
+        }
+    }
+    #else
+        CH554SPIMasterWrite(dat);
+    #endif
     spi_cs = 1;
 }
 void LCD_WR_DATA(UINT16 dat)
@@ -35,9 +69,7 @@ void LCD_WR_DATA(UINT16 dat)
 void LCD_WR_REG(UINT8 dat)
 {
     spi_dc = 0;
-    spi_cs = 0;
-    CH554SPIMasterWrite(dat);
-    spi_cs = 1;
+    LCD_WR_DATA8(dat);
     spi_dc = 1;
 }
 void LCD_Address_Set(UINT16 x1,UINT16 y1,UINT16 x2,UINT16 y2)
@@ -515,10 +547,6 @@ main()
     led1=0;led2=0;led3=0;
     CfgFsys( );                                                           //CH559时钟选择配置
     mDelaymS(5);                                                          //修改主频等待内部晶振稳定,必加
-    //mInitSTDIO( );                                                        //串口0初始化
-// #ifdef DE_PRINTF
-//     //printf("start ...\n");
-// #endif
     for(i=0; i<64; i++)                                                   //准备演示数据
     {
         UserEp2Buf[i] = i;
@@ -530,8 +558,12 @@ main()
     FLAG = 0;
     Ready = 0;
 
+#ifdef SOFT_SPI
+    sclk=0;mosi=0;
+#else
     SPIMasterModeSet(3);
     SPI_CK_SET(4);
+#endif
     spi_reset = 0;spi_cs = 1;spi_dc = 1;
     mDelaymS(100);
     spi_reset = 1;
@@ -558,13 +590,13 @@ main()
 	LCD_WR_DATA8(0x35);
 
 	LCD_WR_REG(0xBB);
-	LCD_WR_DATA8(0x1c); //Vcom=1.35V
+	LCD_WR_DATA8(0x32); //Vcom=1.35V
 
 	LCD_WR_REG(0xC2);
 	LCD_WR_DATA8(0x01);
 
 	LCD_WR_REG(0xC3);
-	LCD_WR_DATA8(0x19); //GVDD=4.8V  颜色深度
+	LCD_WR_DATA8(0x15); //GVDD=4.8V  颜色深度
 
 	LCD_WR_REG(0xC4);
 	LCD_WR_DATA8(0x20); //VDV, 0x20:0v
@@ -623,19 +655,6 @@ main()
         }
     }
 
-// mDelaymS(100);
-//     {
-//         UINT16 i,j,xsta=0,ysta=0,xend=2,yend=2;
-//         LCD_Address_Set(xsta,ysta,xend-1,yend-1);//设置显示范围
-//         for(i=ysta;i<yend;i++)
-//         {
-//             for(j=xsta;j<xend;j++)
-//             {
-//                 LCD_WR_DATA(0xffff);
-//             }
-//         }
-//     }
-
     while(1)
     {
         mDelaymS(100);
@@ -645,49 +664,4 @@ main()
         // mDelaymS(500);
     }
 
-    // while(1)
-    // {
-    //     if(Ready && (Ep2InKey==0))
-    //     {
-	// 		while( Endp2Busy );                                            //如果忙（上一包数据没有传上去），则等待。
-	// 		Endp2Busy = 1;                                                 //设置为忙状态
-    //         Enp2BlukIn( );
-    //         mDelaymS( 100 );
-    //     }
-    //     mDelaymS( 100 );                                                 //模拟单片机做其它事
-    // }
-
-//spi示例代码里面的
-//     UINT8 ret,i=0;
-//     CfgFsys( );
-//     mDelaymS(5);                                                               //调整主频，建议稍加延时等待内部时钟稳定
-//     mInitSTDIO( );                                                             //串口0初始化
-//     printf("start ...\n");
-
-//     SPIMasterModeSet(3);                                                       //SPI主机模式设置，模式3
-
-//     SPI_CK_SET(4);                                                             //4分频
-// #ifdef SPI0Interrupt
-//     CH554SPIInterruptInit();                                                   //SPI中断初始化
-//     EA  = 1;                                                                   //使能全局中断
-// #endif
-//     mDelaymS(100);
-//     while(1)
-//     {
-// 	      SCS = 0;                                                               //SPI主机发送数据
-//         CH554SPIMasterWrite(i);
-//         mDelaymS(5);
-//         ret = CH554SPIMasterRead();                                            //接收SPI从机返回的数据，取反返回
-//         SCS = 1;
-//         if(ret != (i^0xff))
-//         {
-// 		        printf("Err: %02X  %02X  \n",(UINT16)i,(UINT16)ret);               //如果不等于发送数据的取反，打印错误信息
-//         }
-// 		    mDelaymS(50);
-// 	     	i = i+1;
-//         if((i%40)==0)
-//         {
-//             printf("success %02x\n",(UINT16)i);                                //每成功40次打印一次
-//         }
-//     }
 }
