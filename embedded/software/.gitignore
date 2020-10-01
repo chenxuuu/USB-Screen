@@ -1,6 +1,6 @@
 *.uvproj
 *.uvopt
-*.chenx
+*.uvgui.*
 
 [Ll]istings/*
 [Oo]bjects/*
