@@ -156,6 +156,7 @@ void RunCommand(UINT8* pFlash){
 		}
 		case 0xFA:		// 硬件SPI更新LCD数据
 		{
+			LCD_CS = 1;
 			LCD_CS = 0;
 			SPIMasterModeSet();
 			SPI_SendCMD(0x2A);// 列地址设置(0-239)
@@ -175,11 +176,11 @@ void RunCommand(UINT8* pFlash){
 				++i;
 			}
 			SPI0_CTRL = 0x02;	// 禁用硬件SPI
-			LCD_CS = 1;
 			break;
 		}
 		case 0xFB:		// 软件SPI更新LCD数据
 		{
+			LCD_CS = 1;
 			LCD_CS = 0;
 			SPI_Send_CMD(0x2A);// 列地址设置(0-239)
 			SPI_Send_DAT(0x00);
@@ -197,7 +198,6 @@ void RunCommand(UINT8* pFlash){
 				SPI_Send_DAT(pFlash[i]);
 				++i;
 			}
-			LCD_CS = 1;
 			break;
 		}
 		default:		// 未知命令[Error]
