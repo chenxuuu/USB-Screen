@@ -21,11 +21,11 @@
 #define ChipIdData4				(*(PUINT8C)(0x3FFB))		// ChipID保留
 #define ChipIdData5				(*(PUINT8C)(0x3FFA))		// ChipID最高字节
 
-UINT8X Ep0Buffer[0xC0] _at_ 0x0000;				// 端点0 OUT&IN 64byte收发共用缓冲区 + 端点4 OUT&IN 64byte*2收发缓冲区
-UINT8X Ep1Buffer[0x10] _at_ 0x00C0;				// 端点1 IN 64byte发送缓冲区
-//UINT8X	Ep2Buffer[0x10]	_at_ 0x00D0;		// 端点2 IN16byte发送缓冲区	(默认为64byte发送缓冲区)
-//UINT8X	Ep3Buffer[0x10]	_at_ 0x00E0;		// 端点3 IN16byte发送缓冲区	(默认为64byte发送缓冲区)
-#define UsbSetupBuf ((PUSB_SETUP_REQ)Ep0Buffer) // 定义Setup包结构体
+UINT8X	Ep0Buffer[0xC0] _at_ 0x0000;				// 端点0 OUT&IN 64byte收发共用缓冲区 + 端点4 OUT&IN 64byte*2收发缓冲区
+UINT8X	Ep1Buffer[0x80] _at_ 0x00C0;				// 端点1 OUT&IN 64byte*2收发缓冲区
+UINT8X	Ep2Buffer[0x80]	_at_ 0x0140;				// 端点2 OUT&IN 64byte*2收发缓冲区
+UINT8X	Ep3Buffer[0x80]	_at_ 0x01C0;				// 端点3 OUT&IN 64byte*2收发缓冲区
+#define UsbSetupBuf ((PUSB_SETUP_REQ)Ep0Buffer) 	// 定义Setup包结构体
 #define HIDbReqType UsbSetupBuf->bRequestType
 #define HIDbRequest UsbSetupBuf->bRequest
 #define HIDwValueL UsbSetupBuf->wValueL
@@ -38,8 +38,6 @@ UINT8X Ep1Buffer[0x10] _at_ 0x00C0;				// 端点1 IN 64byte发送缓冲区
 Bool	IsUsbShut		= false;				// USB断开标志
 UINT8D	UsbConfig		= 0x00;					// USB配置模式位
 UINT8D	DevStatus		= 0x00;					// USB设备状态位
-
-UINT8X	SPIBuffer[64]	_at_	0x0100;			// 64Byte的SPI数据缓存区
 
 
 /*******************************************************************************
@@ -280,17 +278,17 @@ void USB_DeviceInit( void )
     UEP4_CTRL	= UEP_R_RES_ACK | UEP_T_RES_NAK;	// 端点4 IN返回NAK，OUT返回ACK (注：端点4不支持同步触发位自动翻转功能)
     UEP4_1_MOD	= 0x4C;								// 端点0单64byte收发共用缓冲区，端点4 64byte接收缓冲区&64byte发送缓冲区
 
-//	UEP1_DMA	= Ep1Buffer;										// 端点1 数据传输地址
-//    UEP1_CTRL	= bUEP_AUTO_TOG | UEP_R_RES_ACK | UEP_T_RES_NAK;	// 端点1 自动翻转同步标志位，IN事务返回NAK，OUT返回ACK
-//	UEP4_1_MOD	|= 0x40;											// 端点1 接收禁止&发送使能
+	UEP1_DMA	= Ep1Buffer;										// 端点1 数据传输地址
+    UEP1_CTRL	= bUEP_AUTO_TOG | UEP_R_RES_ACK | UEP_T_RES_NAK;	// 端点1 自动翻转同步标志位，IN事务返回NAK，OUT返回ACK
+	UEP4_1_MOD	|= 0xC0;											// 端点1 接收&发送使能
 	
-//    UEP2_DMA		= Ep2Buffer;										// 端点2 数据传输地址
-//    UEP2_CTRL		= bUEP_AUTO_TOG | UEP_R_RES_ACK | UEP_T_RES_NAK;	// 端点2 自动翻转同步标志位，IN事务返回NAK，OUT返回ACK
-//	UEP2_3_MOD	|= 0x04;												// 端点2 接收禁止&发送使能
+    UEP2_DMA	= Ep2Buffer;										// 端点2 数据传输地址
+    UEP2_CTRL	= bUEP_AUTO_TOG | UEP_R_RES_ACK | UEP_T_RES_NAK;	// 端点2 自动翻转同步标志位，IN事务返回NAK，OUT返回ACK
+	UEP2_3_MOD	|= 0x0C;											// 端点2 接收&发送使能
 	
-//    UEP3_DMA		= Ep3Buffer;										// 端点3 数据传输地址
-//    UEP3_CTRL		= bUEP_AUTO_TOG | UEP_R_RES_ACK | UEP_T_RES_NAK;	// 端点3 自动翻转同步标志位，IN事务返回NAK，OUT返回ACK
-//	UEP2_3_MOD	|= 0x40;												// 端点3 接收禁止&发送使能
+    UEP3_DMA	= Ep3Buffer;										// 端点3 数据传输地址
+    UEP3_CTRL	= bUEP_AUTO_TOG | UEP_R_RES_ACK | UEP_T_RES_NAK;	// 端点3 自动翻转同步标志位，IN事务返回NAK，OUT返回ACK
+	UEP2_3_MOD	|= 0xC0;											// 端点3 接收&发送使能
 	
 	USB_INT_EN	|= 0x03;	// 禁止[SOF&NAK&FIFO]中断；使能[总线挂起或唤醒&传输完成&总线复位]中断
     USB_INT_FG	= 0xFF;		// 清中断标志(高3位只读,低5位写1清零)
@@ -314,9 +312,48 @@ void HID_DeviceInterrupt(void) interrupt INT_NO_USB
     {
         switch (USB_INT_ST & (MASK_UIS_TOKEN | MASK_UIS_ENDP))						// 判断此次中断是由哪个端点发起的
         {
+			case UIS_TOKEN_IN  | 1:													// 端点1 上传
+				UEP1_T_LEN = 0;
+				UEP1_CTRL = UEP1_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_NAK;			// 默认应答NAK
+				break;
+			case UIS_TOKEN_IN  | 2:													// 端点2 上传
+				UEP2_T_LEN = 0;
+				UEP2_CTRL = UEP2_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_NAK;			// 默认应答NAK
+				break;
+			case UIS_TOKEN_IN  | 3:													// 端点3 上传
+				UEP3_T_LEN = 0;
+				UEP3_CTRL = UEP3_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_NAK;			// 默认应答NAK
+				break;
 			case UIS_TOKEN_IN  | 4:													// 端点4 上传
 				UEP4_T_LEN = 0;
 				UEP4_CTRL = UEP4_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_NAK;			// 默认应答NAK
+				break;
+			case UIS_TOKEN_OUT | 1:													// 端点1 下传
+				if (U_TOG_OK)                                                     	// 不同步的数据包将丢弃
+				{
+					memcpy(Ep1Buffer+0x40, Ep1Buffer, 64);							// 转存数据，数据从Ep0Buffer第0x40地址开始存放
+					RunCommand(Ep1Buffer+0x40);										// 处理数据 (并将需要回传的数据写入Ep0Buffer+0x80发送缓冲区)
+					UEP1_T_LEN = 0x40;
+					UEP1_CTRL = UEP1_CTRL & ~ MASK_UEP_T_RES | UEP_T_RES_ACK;		// 有数据时上传数据并应答ACK
+				}
+				break;
+			case UIS_TOKEN_OUT | 2:													// 端点2 下传
+				if (U_TOG_OK)                                                     	// 不同步的数据包将丢弃
+				{
+					memcpy(Ep1Buffer+0x40, Ep1Buffer, 64);							// 转存数据，数据从Ep0Buffer第0x40地址开始存放
+					RunCommand(Ep1Buffer+0x40);										// 处理数据 (并将需要回传的数据写入Ep0Buffer+0x80发送缓冲区)
+					UEP2_T_LEN = 0x40;
+					UEP2_CTRL = UEP2_CTRL & ~ MASK_UEP_T_RES | UEP_T_RES_ACK;		// 有数据时上传数据并应答ACK
+				}
+				break;
+			case UIS_TOKEN_OUT | 3:													// 端点3 下传
+				if (U_TOG_OK)                                                     	// 不同步的数据包将丢弃
+				{
+					memcpy(Ep1Buffer+0x40, Ep1Buffer, 64);							// 转存数据，数据从Ep0Buffer第0x40地址开始存放
+					RunCommand(Ep1Buffer+0x40);										// 处理数据 (并将需要回传的数据写入Ep0Buffer+0x80发送缓冲区)
+					UEP3_T_LEN = 0x40;
+					UEP3_CTRL = UEP3_CTRL & ~ MASK_UEP_T_RES | UEP_T_RES_ACK;		// 有数据时上传数据并应答ACK
+				}
 				break;
 			case UIS_TOKEN_OUT | 4:													// 端点4 下传
 				if (U_TOG_OK)                                                     	// 不同步的数据包将丢弃
@@ -329,10 +366,6 @@ void HID_DeviceInterrupt(void) interrupt INT_NO_USB
 					UEP4_CTRL = UEP4_CTRL & ~ MASK_UEP_T_RES | UEP_T_RES_ACK;		// 有数据时上传数据并应答ACK
 				}
 				break;
-//			case UIS_TOKEN_IN  | 1:													// 端点1 上传
-//				UEP1_T_LEN = 0;
-//				UEP1_CTRL = UEP1_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_NAK;			// 默认应答NAK
-//				break;
 			case UIS_TOKEN_SETUP | 0:												// SETUP事务,用于USB设备初始化
 			{
 				if(USB_RX_LEN != 8)													// 检测SETUP包长度是否正确
