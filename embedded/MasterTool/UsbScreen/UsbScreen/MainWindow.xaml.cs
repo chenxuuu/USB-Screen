@@ -40,6 +40,10 @@ namespace UsbScreen
 		/// </summary>
 		public FileStream HidDevice { get; set; }
 		/// <summary>
+		/// 缓存固件数据
+		/// </summary>
+		public List<byte[]> Firmware = new List<byte[]>();
+		/// <summary>
 		/// 数据发送缓冲队列
 		/// </summary>
 		public Queue<byte[]> SendBufferQueue = new Queue<byte[]>();
@@ -141,15 +145,33 @@ namespace UsbScreen
 				}
 				stream.Dispose();
 
+				byte spicmd = sspi.IsChecked.Value ? 0xFB : 0xFA;
 				List<byte[]> ImageArr = new List<byte[]>();
 				for (int i = 0; i < ColorList.Count; i += 60)
 				{
-					List<byte> tmp = new List<byte> { 0xFA, 0x3C, (byte)(i % 120), (byte)(i / 120) };
+					List<byte> tmp = new List<byte> { spicmd, 0x3C, (byte)((i % 480) / 2), (byte)(i / 480) };
 					tmp.AddRange(ColorList.Skip(i).Take(60));
 					ImageArr.Add(tmp.ToArray());
 				}
 				ImageArr.ForEach(b => SendBufferQueue.Enqueue(b));
 				if (SendBufferQueue.Count > 0) Transceiver(new byte[] { 0xB0 });// 启动数据收发器
+			};
+			// 更新固件
+			LoadHex.Click += delegate
+			{
+				OpenFileDialog FileLoader = new OpenFileDialog()
+				{
+					Filter = "固件文件|*.hex"
+				};
+				if (FileLoader.ShowDialog() == false) return;
+				Firmware = HexToBin(FileLoader.FileName);
+				// 输出转译后的固件数据,调试使用
+				//Firmware.ForEach(b =>
+				//{
+				//	Debug.WriteLine(string.Join(" ", b.Select(i => $"{i:X2}")));
+				//});
+				SendBufferQueue.Enqueue(new byte[] { 0xB1, 0x00 });// 进入Bootloader模式命令
+				Transceiver(new byte[] { 0xB0 });// 启动数据收发器
 			};
 			this.Loaded += delegate
 			{
@@ -302,10 +324,10 @@ namespace UsbScreen
 			// 创建数据发送缓冲区
 			byte[] dataBytes = Enumerable.Repeat((byte)0x00, DeviceCaps.OutputLength).ToArray();
 			//dataBytes[0] = 0;                                                         // 设置 ReportID=0
-			sendBytes.CopyTo(dataBytes, 1);												// 准备待发送数据
+			sendBytes.CopyTo(dataBytes, 1);                                             // 准备待发送数据
 			try
 			{
-				HidDevice.Write(dataBytes, 0, DeviceCaps.OutputLength);					// 发送数据到设备
+				HidDevice.Write(dataBytes, 0, DeviceCaps.OutputLength);                 // 发送数据到设备
 			}
 			catch (Exception e)
 			{
@@ -323,22 +345,30 @@ namespace UsbScreen
 			if (readBytes.Length == 1 && readBytes[0] == 0xB0)
 			{
 				RunSendingTimer();                                                      // 启动数据发送超时定时器
+				progress.Maximum = SendBufferQueue.Count;
+				progress.Value = 0;
 				return;
 			}
 			// 处理收到的数据
 			if (SendBytesTemp != null && readBytes.Length == 64 && readBytes[0] == SendBytesTemp[0])
 			{
-				DebugPrint(string.Join(" ", readBytes.Select(d => $"{d:X2}")));			// 打印收到的数据,调试使用
+				DebugPrint(string.Join(" ", readBytes.Select(d => $"{d:X2}")));         // 打印收到的数据,调试使用
 				if (ResultCommand(readBytes) && SendBufferQueue.Count > 0)              // 判断反馈的命令操作结果
 				{
 					SendBytesTemp = SendBufferQueue.Dequeue();
 					SendDataBytes(SendBytesTemp);
 					DelayTimerValue = 0;                                                // 更新数据发送超时检测定时器阈值
+					this.Dispatcher.Invoke((Action)delegate                             // 更新进度条
+					{
+						++progress.Value;
+						if (SendBytesTemp[0] == 0xB1) progress.Value = 0;
+					});
 				}
 				else
 				{
 					DataSendingTimer.Stop();
 					SendBufferQueue.Clear();
+					this.Dispatcher.Invoke((Action)delegate { progress.Value = 0; });   // 清空进度条
 				}
 			}
 			else
@@ -390,8 +420,18 @@ namespace UsbScreen
 		{
 			this.Dispatcher.Invoke((Action)delegate
 			{
-				Refresh.IsEnabled = true;
+				progress.Value = 0;
 				DebugPrint($"设备已连接-> VID:{DeviceAttr.VID:X4} PID:{DeviceAttr.PID:X4} REV:{DeviceAttr.VER:X4} ReportIO:{DeviceCaps.InputLength}/{DeviceCaps.OutputLength}");
+				if (DeviceAttr.PID == 0x2324)
+				{
+					Refresh.IsEnabled = true;
+					LoadHex.IsEnabled = true;
+				}
+				if (DeviceAttr.PID == 0xC551 && Firmware.Count > 0)
+				{
+					Firmware.ForEach(b => SendBufferQueue.Enqueue(b));
+					Transceiver(new byte[] { 0xB0 });// 启动数据收发器
+				}
 			});
 		}
 		/// <summary>
@@ -401,8 +441,9 @@ namespace UsbScreen
 		{
 			this.Dispatcher.Invoke((Action)delegate
 			{
-				Refresh.IsEnabled = false;
 				DebugPrint($"连接已断开-> VID:{DeviceAttr.VID:X4} PID:{DeviceAttr.PID:X4} REV:{DeviceAttr.VER:X4}");
+				Refresh.IsEnabled = false;
+				LoadHex.IsEnabled = false;
 			});
 		}
 		/// <summary>
@@ -445,5 +486,118 @@ namespace UsbScreen
 			}
 		}
 
+
+		/// <summary>
+		/// 转化Hex文件为Bin数据
+		/// </summary>
+		/// <param name="FilePath">文件路径</param>
+		/// <returns>待下载的指令集合List&lt;byte[]&gt;</returns>
+		public List<byte[]> HexToBin(string FilePath)
+		{
+			// 缓存转化后的数据
+			List<byte[]> BinLines = new List<byte[]>();
+			// 创建Hex数据缓存区
+			List<string> HexLines = new List<string>();
+			// 载入固件数据
+			HexLines.AddRange(File.ReadAllLines(FilePath));
+			DebugPrint($"已载入文件: {FilePath.Split('\\').Last()}");
+			// 获取文件尾标志
+			int footer = HexLines.FindIndex(str => str.Equals(":00000001FF"));
+			if (footer != -1)
+			{
+				HexLines.RemoveAt(footer);
+			}
+			else
+			{
+				DebugPrint("Hex数据已损坏,导入失败!");
+				return BinLines;
+			}
+			// 校验Hex数据
+			foreach (string line in HexLines)
+			{
+				if (line.StartsWith(":") && (line.Length & 0x1) == 0x1)
+				{
+					byte checkSum = 0x00;
+					for (int i = 1, len = line.Length; i < len; i += 2)
+					{
+						checkSum += Convert.ToByte(line.Substring(i, 2), 16);
+					}
+					if (checkSum != 0)
+					{
+						DebugPrint("Hex数据已损坏,导入失败!");
+						return BinLines;
+					}
+				}
+				else
+				{
+					DebugPrint("Hex数据已损坏,导入失败!");
+					return BinLines;
+				}
+			}
+			// 提取Hex有效数据(排除数据头和校验和)
+			for (int i = 0, len = HexLines.Count; i < len; ++i)
+			{
+				HexLines[i] = HexLines[i].Substring(3, HexLines[i].Length - 3 - 2);
+			}
+			// 将数据按照地址从小到大排序
+			HexLines.Sort();
+			// 识别BootLoader固件(若是Boot固件,则需要对Start跳转命令进行处理)
+			ushort bootAddr = Convert.ToUInt16(HexLines[1].Substring(0, 4), 16);
+			if (bootAddr > 0x1000 && (byte)bootAddr == 0x04)
+			{
+				HexLines[0] = (bootAddr & 0xFC00).ToString("X4") + HexLines[0].Substring(4);
+			}
+			// 获取固件数据起始地址(WCH单片机CH55X系列Flash最大64K,所以只有16位地址)
+			ushort startAddr = Convert.ToUInt16(HexLines[0].Substring(0, 4), 16);
+			DebugPrint(startAddr == 0x00 ? "已载入用户程序固件" : "已载入引导程序固件");
+			// 将分段的Hex数据转化为连续的Bin数据
+			List<byte> binData = new List<byte>();
+			HexLines.ForEach(line =>
+			{
+				int strAddr = Convert.ToInt32(line.Substring(0, 4), 16);
+				while (binData.Count < (strAddr - startAddr))
+				{
+					binData.Add(0xFF);  // 为数据中间的空位填补0xFF占位
+				}
+				for (int i = 6, len = line.Length; i < len; i += 2)
+				{
+					binData.Add(Convert.ToByte(line.Substring(i, 2), 16));
+				}
+			});
+			// 将连续的Bin数据分割为指定的长度(每段长 0x20 byte)
+			List<List<byte>> TempList = new List<List<byte>>();
+			for (int i = 0, len = binData.Count; i < len; i += 0x20)
+			{
+				TempList.Add(binData.Skip(i).Take(0x20).ToList());
+			}
+			// 使用0xFF数据补齐最后一行数据的长度,使其能够达到32位长(注:Flash校验限制长度为0x20)
+			List<byte> patchBuffer = Enumerable.Repeat((byte)0xFF, 0x20 - TempList.Last().Count).ToList();
+			TempList[TempList.Count - 1].AddRange(patchBuffer);
+			// 计算数据长度和地址
+			for (int i = 0, addr = startAddr, len = TempList.Count; i < len; ++i, addr += 0x20)
+			{
+				int sLen = TempList[i].Count();
+				TempList[i].InsertRange(0, new List<byte> { 0x00, (byte)sLen, (byte)addr, (byte)(addr >> 8) });
+			}
+			// 将数据压入操作队列 {1byte操作命令,1byte数据长度,2byte操作地址,0x20byte数据内容}
+			// 添加Flash写入命令
+			TempList.ForEach(buf =>
+			{
+				buf[0] = 0x82;
+				BinLines.Add(buf.ToArray());
+			});
+			// 添加Flash校验命令(判断数据内容是否为BootLoader,如果是,则不需要添加校验命令,用户程序会自动校验)
+			if (startAddr == 0x0000)
+			{
+				TempList.ForEach(buf =>
+				{
+					buf[0] = 0x83;
+					BinLines.Add(buf.ToArray());
+				});
+				// 添加设备重启命令
+				BinLines.Add(new byte[] { 0x1B, 0x00 });
+			}
+			return BinLines;
+		}
 	}
 }
