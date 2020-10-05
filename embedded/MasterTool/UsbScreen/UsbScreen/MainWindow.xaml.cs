@@ -352,7 +352,7 @@ namespace UsbScreen
 			// 处理收到的数据
 			if (SendBytesTemp != null && readBytes.Length == 64 && readBytes[0] == SendBytesTemp[0])
 			{
-				DebugPrint(string.Join(" ", readBytes.Select(d => $"{d:X2}")));         // 打印收到的数据,调试使用
+				//DebugPrint(string.Join(" ", readBytes.Select(d => $"{d:X2}")));         // 打印收到的数据,调试使用
 				if (ResultCommand(readBytes) && SendBufferQueue.Count > 0)              // 判断反馈的命令操作结果
 				{
 					SendBytesTemp = SendBufferQueue.Dequeue();
