@@ -2,7 +2,6 @@
 #include "CH552.h"
 #include "TypeDefines.h"
 #include "UsbReports.h"
-#include "UsbBufferStack.h"
 #include "SPI.h"
 #include "UsbManager.h"
 

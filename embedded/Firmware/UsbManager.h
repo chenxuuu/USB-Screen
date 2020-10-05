@@ -156,24 +156,26 @@ void RunCommand(UINT8* pFlash){
 		}
 		case 0xFA:		// 硬件SPI更新LCD数据
 		{
-			SPI_Send_CMD(0x2A);// 列地址设置(0-239)
-			SPI_Send_DAT(0x00);
-			SPI_Send_DAT(pFlash[2]);
-			SPI_Send_DAT(0x00);
-			SPI_Send_DAT(0xEF);
-			SPI_Send_CMD(0x2B);// 行地址设置(0-239)
-			SPI_Send_DAT(0x00);
-			SPI_Send_DAT(pFlash[3]);
-			SPI_Send_DAT(0x00);
-			SPI_Send_DAT(0xEF);
-			SPI_Send_CMD(0x2C);// 写LCD数据存储器
+			LCD_CS = 0;
 			SPIMasterModeSet();
+			SPI_SendCMD(0x2A);// 列地址设置(0-239)
+			SPI_SendDAT(0x00);
+			SPI_SendDAT(pFlash[2]);
+			SPI_SendDAT(0x00);
+			SPI_SendDAT(0xEF);
+			SPI_SendCMD(0x2B);// 行地址设置(0-239)
+			SPI_SendDAT(0x00);
+			SPI_SendDAT(pFlash[3]);
+			SPI_SendDAT(0x00);
+			SPI_SendDAT(0xEF);
+			SPI_SendCMD(0x2C);// 写LCD数据存储器
 			for(i=4; length; --length)
 			{
 				SPI_SendDAT(pFlash[i]);
 				++i;
 			}
 			SPI0_CTRL = 0x02;	// 禁用硬件SPI
+			LCD_CS = 1;
 			break;
 		}
 		case 0xFB:		// 软件SPI更新LCD数据
@@ -207,56 +209,6 @@ void RunCommand(UINT8* pFlash){
 	pFlash[1] = ReCode;	// 返回操作结果命令，用于上位机校验
 }
 
-
-/*******************************************************************************
-* Function Name	: Enp1IntIn(UINT8 Buffers[], UINT8 Length)
-* Description	: 端点1数据上传函数
-* Input			: None
-* Return		: None
-*******************************************************************************/
-//void Enp1IntIn(UINT8 *Ep1Buf, UINT8 Ep1Len)
-//{
-//    UEP1_T_LEN = Ep1Len;										//上传数据长度
-//	memcpy(Ep1Buffer, Ep1Buf+1, Ep1Len);						//拷贝缓存数据
-//    UEP1_CTRL = UEP1_CTRL & ~ MASK_UEP_T_RES | UEP_T_RES_ACK;	//有数据时上传数据并应答ACK
-//}
-/*******************************************************************************
-* Function Name	: Enp2IntIn(UINT8 Ep2Len)
-* Description	: 端点2数据上传函数
-* Input			: None
-* Return		: None
-*******************************************************************************/
-//void Enp2IntIn(UINT8 Ep2Buf[], UINT8 Ep2Len)
-//{
-//    UEP2_T_LEN = Ep2Len;										//上传数据长度
-//	memcpy(Ep2Buffer, Ep2Buf, Ep2Len);							//拷贝缓存数据
-//    UEP2_CTRL = UEP2_CTRL & ~ MASK_UEP_T_RES | UEP_T_RES_ACK;	//有数据时上传数据并应答ACK
-//}
-/*******************************************************************************
-* Function Name	: Enp3IntIn()
-* Description	: 端点3数据上传函数
-* Input			: None
-* Return		: None
-*******************************************************************************/
-//void Enp3IntIn(UINT8 Ep3Buf[], UINT8 Ep3Len)
-//{
-//    UEP3_T_LEN = Ep3Len;                                      //上传数据长度
-//	memcpy(Ep3Buffer, Ep3Buf, Ep3Len);							//拷贝缓存数据
-//    UEP3_CTRL = UEP3_CTRL & ~ MASK_UEP_T_RES | UEP_T_RES_ACK;	//有数据时上传数据并应答ACK
-//}
-/*******************************************************************************
-* Function Name	: Enp4IntIn(UINT8 reCode)
-* Description			: 端点4数据上传函数
-* Input						: None
-* Return					: None
-*******************************************************************************/
-//void Enp4IntIn()
-//{
-//	UEP4_T_LEN = 64;
-//	memcpy(Ep0Buffer + 0x80, Ep0Buffer + 0x40, 64);					// 返回校验数据
-//	UEP4_CTRL = UEP4_CTRL & 0x80 ? UEP4_CTRL&0x8F : UEP4_CTRL|0x40;	// 设置端点4发送器同步标志位
-//	UEP4_CTRL = UEP4_CTRL & ~ MASK_UEP_T_RES | UEP_T_RES_ACK;		// 有数据时上传数据并应答ACK
-//}
 /*******************************************************************************
 * Function Name	: USB_DeviceInit
 * Description			: USB设备模式初始化函数
@@ -463,9 +415,24 @@ void HID_DeviceInterrupt(void) interrupt INT_NO_USB
 								{
 								   switch( HIDwIndexL )
 								   {
-//									  case 0x81:
-//										   UEP1_CTRL = UEP1_CTRL & ~ ( bUEP_T_TOG | MASK_UEP_T_RES ) | UEP_T_RES_NAK;
-//										   break;
+									  case 0x81:
+										   UEP1_CTRL = UEP1_CTRL & ~ ( bUEP_T_TOG | MASK_UEP_T_RES ) | UEP_T_RES_NAK;
+										   break;
+									  case 0x01:
+										   UEP1_CTRL = UEP1_CTRL & ~ ( bUEP_R_TOG | MASK_UEP_T_RES ) | UEP_R_RES_ACK;
+										   break;
+									  case 0x82:
+										   UEP2_CTRL = UEP2_CTRL & ~ ( bUEP_T_TOG | MASK_UEP_T_RES ) | UEP_T_RES_NAK;
+										   break;
+									  case 0x02:
+										   UEP2_CTRL = UEP2_CTRL & ~ ( bUEP_R_TOG | MASK_UEP_T_RES ) | UEP_R_RES_ACK;
+										   break;
+									  case 0x83:
+										   UEP3_CTRL = UEP3_CTRL & ~ ( bUEP_T_TOG | MASK_UEP_T_RES ) | UEP_T_RES_NAK;
+										   break;
+									  case 0x03:
+										   UEP3_CTRL = UEP3_CTRL & ~ ( bUEP_R_TOG | MASK_UEP_T_RES ) | UEP_R_RES_ACK;
+										   break;
 									  case 0x84:
 										   UEP4_CTRL = UEP4_CTRL & ~ ( bUEP_T_TOG | MASK_UEP_T_RES ) | UEP_T_RES_NAK;
 										   break;
@@ -509,9 +476,24 @@ void HID_DeviceInterrupt(void) interrupt INT_NO_USB
 									{
 										switch(((UINT16)HIDwIndexH << 8 ) | HIDwIndexL )
 										{
-//										case 0x81:
-//											UEP1_CTRL = UEP1_CTRL & (~bUEP_T_TOG) | UEP_T_RES_STALL;// 设置端点1 IN STALL
-//											break;
+										case 0x81:
+											UEP1_CTRL = UEP1_CTRL & (~bUEP_T_TOG) | UEP_T_RES_STALL;// 设置端点1 IN STALL
+											break;
+										case 0x01:
+											UEP1_CTRL = UEP1_CTRL & (~bUEP_T_TOG) | UEP_R_RES_STALL;// 设置端点1 OUT STALL
+											break;
+										case 0x82:
+											UEP2_CTRL = UEP2_CTRL & (~bUEP_T_TOG) | UEP_T_RES_STALL;// 设置端点1 IN STALL
+											break;
+										case 0x02:
+											UEP2_CTRL = UEP2_CTRL & (~bUEP_T_TOG) | UEP_R_RES_STALL;// 设置端点1 OUT STALL
+											break;
+										case 0x83:
+											UEP3_CTRL = UEP3_CTRL & (~bUEP_T_TOG) | UEP_T_RES_STALL;// 设置端点1 IN STALL
+											break;
+										case 0x03:
+											UEP3_CTRL = UEP3_CTRL & (~bUEP_T_TOG) | UEP_R_RES_STALL;// 设置端点1 OUT STALL
+											break;
 										case 0x84:
 											UEP4_CTRL = UEP4_CTRL & (~bUEP_T_TOG) | UEP_T_RES_STALL;// 设置端点2 IN STALL
 											break;

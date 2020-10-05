@@ -85,10 +85,8 @@ void SPIMasterModeSet()
 *******************************************************************************/
 void SPI_SendDAT(UINT8 dat)
 {
-	LCD_CS = 0;
     SPI0_DATA = dat;                                                           
     while(S0_FREE == 0);	//等待传输完成
-	LCD_CS = 1;
 }
 /*******************************************************************************
 * Function Name  : SPI_SendCMD(UINT8 dat)
@@ -97,12 +95,12 @@ void SPI_SendDAT(UINT8 dat)
 * Output         : None
 * Return         : None
 *******************************************************************************/
-//void SPI_SendCMD(UINT8 dat)
-//{
-//	LCD_DC	= 0;			// 写命令
-//	SPI_SendDAT(dat);
-//	LCD_DC	= 1;			// 写数据
-//}
+void SPI_SendCMD(UINT8 dat)
+{
+	LCD_DC	= 0;			// 写命令
+	SPI_SendDAT(dat);
+	LCD_DC	= 1;			// 写数据
+}
 /*******************************************************************************
 * Function Name	: LCD_Init
 * Description	: LCD屏幕显示初始化
