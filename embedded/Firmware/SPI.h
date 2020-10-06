@@ -74,8 +74,8 @@ void SPIMasterModeSet()
 {
 	SPI0_CTRL	= 0x60;		// 模式0		
 	SPI0_CK_SE	= 0x02;		// 分频系数2，SPI频率=Fsys/2
-    P1_MOD_OC |= 0xF0;		// 高4位设置位开漏输出
-    P1_DIR_PU |= 0xF0;		// 高4位启用上拉电阻
+    P1_MOD_OC  |= 0xF0;		// 高4位设置位开漏输出
+    P1_DIR_PU  |= 0xF0;		// 高4位启用上拉电阻
 }
 /*******************************************************************************
 * Function Name  : SPI_SendDAT(UINT8 dat)

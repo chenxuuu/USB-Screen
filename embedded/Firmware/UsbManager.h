@@ -292,8 +292,8 @@ void HID_DeviceInterrupt(void) interrupt INT_NO_USB
 			case UIS_TOKEN_OUT | 2:													// 端点2 下传
 				if (U_TOG_OK)                                                     	// 不同步的数据包将丢弃
 				{
-					memcpy(Ep1Buffer+0x40, Ep1Buffer, 64);							// 转存数据，数据从Ep0Buffer第0x40地址开始存放
-					RunCommand(Ep1Buffer+0x40);										// 处理数据 (并将需要回传的数据写入Ep0Buffer+0x80发送缓冲区)
+					memcpy(Ep2Buffer+0x40, Ep2Buffer, 64);							// 转存数据，数据从Ep0Buffer第0x40地址开始存放
+					RunCommand(Ep2Buffer+0x40);										// 处理数据 (并将需要回传的数据写入Ep0Buffer+0x80发送缓冲区)
 					UEP2_T_LEN = 0x40;
 					UEP2_CTRL = UEP2_CTRL & ~ MASK_UEP_T_RES | UEP_T_RES_ACK;		// 有数据时上传数据并应答ACK
 				}
@@ -301,8 +301,8 @@ void HID_DeviceInterrupt(void) interrupt INT_NO_USB
 			case UIS_TOKEN_OUT | 3:													// 端点3 下传
 				if (U_TOG_OK)                                                     	// 不同步的数据包将丢弃
 				{
-					memcpy(Ep1Buffer+0x40, Ep1Buffer, 64);							// 转存数据，数据从Ep0Buffer第0x40地址开始存放
-					RunCommand(Ep1Buffer+0x40);										// 处理数据 (并将需要回传的数据写入Ep0Buffer+0x80发送缓冲区)
+					memcpy(Ep3Buffer+0x40, Ep3Buffer, 64);							// 转存数据，数据从Ep0Buffer第0x40地址开始存放
+					RunCommand(Ep3Buffer+0x40);										// 处理数据 (并将需要回传的数据写入Ep0Buffer+0x80发送缓冲区)
 					UEP3_T_LEN = 0x40;
 					UEP3_CTRL = UEP3_CTRL & ~ MASK_UEP_T_RES | UEP_T_RES_ACK;		// 有数据时上传数据并应答ACK
 				}

@@ -28,34 +28,120 @@ namespace UsbScreen
 	public partial class MainWindow : Window
 	{
 		/// <summary>
-		/// 设备属性信息
-		/// </summary>
-		public HidAPI.HidAttributes DeviceAttr { get; set; }
-		/// <summary>
-		/// 设备功能信息
-		/// </summary>
-		public HidAPI.HIDP_CAPS DeviceCaps { get; set; }
-		/// <summary>
-		/// 设备数据读写通道
-		/// </summary>
-		public FileStream HidDevice { get; set; }
-		/// <summary>
 		/// 缓存固件数据
 		/// </summary>
 		public List<byte[]> Firmware = new List<byte[]>();
 		/// <summary>
+		/// USB设备类
+		/// </summary>
+		public class USBDevice
+		{
+			/// <summary>
+			/// 设备地址
+			/// </summary>
+			public string Path { get; set; }
+			/// <summary>
+			/// 设备属性信息
+			/// </summary>
+			public HidAPI.HidAttributes Attr { get; set; }
+			/// <summary>
+			/// 设备功能信息
+			/// </summary>
+			public HidAPI.HIDP_CAPS Caps { get; set; }
+			/// <summary>
+			/// 设备数据读写通道
+			/// </summary>
+			public FileStream Channel { get; set; }
+			/// <summary>
+			/// 暂存待发送的数据
+			/// </summary>
+			public byte[] Buffer;
+			/// <summary>
+			/// 发送数据到设备
+			/// </summary>
+			/// <param name="sendBytes">Byte[64]数组</param>
+			public void SendDataBytes(byte[] sendBytes)
+			{
+				Buffer = sendBytes;
+				// 创建数据发送缓冲区
+				byte[] dataBytes = Enumerable.Repeat((byte)0x00, Caps.OutputLength).ToArray();
+				//dataBytes[0] = 0;                                                         // 设置 ReportID=0
+				sendBytes.CopyTo(dataBytes, 1);                                             // 准备待发送数据
+				try
+				{
+					Channel.Write(dataBytes, 0, Caps.OutputLength);							// 发送数据到设备
+				}
+				catch (Exception e)
+				{
+					DebugPrint($"SendDataBytes操作出错:{e.Message}");
+					//DataSendingTimer.Stop();                                                // 关闭数据发送超时定时器
+				}
+			}
+			///// <summary>
+			///// 数据发送超时检测定时器
+			///// </summary>
+			//private DispatcherTimer DataSendingTimer = null;
+			//public uint DelayTimerValue = 0;
+			///// <summary>
+			///// 启动数据发送
+			///// </summary>
+			//public void RunSendingTimer(byte[] sendTemp)
+			//{
+			//	BufTmp = sendTemp;
+			//	DelayTimerValue = 0;
+			//	if (DataSendingTimer == null)
+			//	{
+			//		DataSendingTimer = new DispatcherTimer()
+			//		{
+			//			Interval = new TimeSpan(0, 0, 0, 0, 100)    // 定时器触发间隔100ms
+			//		};
+			//		DataSendingTimer.Tick += delegate
+			//		{
+			//			if (sendTemp[0] == 0xB1 || sendTemp[0] == 0x1B)
+			//			{
+			//				DataSendingTimer.Stop();                // 重启指令不会得到反馈结果(关闭数据发送超时定时器)
+			//				return;
+			//			}
+			//			if (++DelayTimerValue < 10) return;
+			//			DebugPrint("数据传输超时,将立即重试...");
+			//			DelayTimerValue = 0;
+			//			SendDataBytes(sendTemp);
+			//		};
+			//	}
+			//	if (!DataSendingTimer.IsEnabled)
+			//	{
+			//		if (SendBufferQueue.Count == 0)
+			//		{
+			//			DataSendingTimer.Stop();
+			//			return;
+			//		}
+			//		SendBytesTemp = SendBufferQueue.Dequeue();
+			//		SendDataBytes(SendBytesTemp);
+			//		DataSendingTimer.Start();
+			//	}
+			//}
+		}
+		/// <summary>
+		/// HID设备类集合
+		/// </summary>
+		public List<USBDevice> HidDevice = new List<USBDevice>();
+		/// <summary>
 		/// 数据发送缓冲队列
 		/// </summary>
 		public Queue<byte[]> SendBufferQueue = new Queue<byte[]>();
-		/// <summary>
-		/// 数据发送暂存区
-		/// </summary>
-		private byte[] SendBytesTemp;
+		///// <summary>
+		///// 设备数据读写通道
+		///// </summary>
+		//public FileStream HidDevice { get; set; }
+		///// <summary>
+		///// 数据发送暂存区
+		///// </summary>
+		//private byte[] SendBytesTemp;
 		/// <summary>
 		/// 打印调试信息
 		/// </summary>
 		/// <param name="message">调试信息</param>
-		private void DebugPrint(object message)
+		public static void DebugPrint(object message)
 		{
 			Debug.WriteLine($"[{DateTime.Now:HH:mm:ss:fff}] {message}");
 		}
@@ -250,90 +336,82 @@ namespace UsbScreen
 			{
 				DeviceList.ItemsSource = deviceList;
 				DeviceList.SelectedIndex = 0;
-				ConnectDevice(deviceList[0]);
+				ConnectDevice(deviceList);
 			}
 			else
 			{
 				DeviceList.ItemsSource = null;
 			}
-
 		}
 
 		/// <summary>
-		/// 连接指定地址的HID设备
+		/// 连接HID设备
 		/// </summary>
 		/// <param name="devicePath">目标设备地址</param>
-		private void ConnectDevice(string devicePath)
+		private void ConnectDevice(List<string> deviceList)
 		{
-
-			// 使用共享模式打开设备读写句柄
-			IntPtr devHandle = WinAPI.CreateFile(devicePath.ToLower(), WinAPI.Generic.READ | WinAPI.Generic.WRITE, (uint)FileShare.ReadWrite, 0, WinAPI.CreationDisposition.OPEN_EXISTING, WinAPI.FileFlag.OVERLAPPED, 0);
-			// 若打开设备句柄失败则返回失败标志
-			if (devHandle == new IntPtr(-1))
+			HidDevice.Clear();
+			deviceList.ForEach(devicePath =>
 			{
-				DebugPrint($"<连接设备失败> {devicePath.ToUpper()}");
-				DebugPrint($"<GetLastError()={WinAPI.GetLastError()}> {WinAPI.ErrorCode(WinAPI.GetLastError())}");
-				return;
+				DebugPrint($"<连接设备> {devicePath}");
+				// 使用共享模式打开设备读写句柄
+				IntPtr devHandle = WinAPI.CreateFile(devicePath.ToLower(), WinAPI.Generic.READ | WinAPI.Generic.WRITE, (uint)FileShare.ReadWrite, 0, WinAPI.CreationDisposition.OPEN_EXISTING, WinAPI.FileFlag.OVERLAPPED, 0);
+				// 若打开设备句柄失败则返回失败标志
+				if (devHandle == new IntPtr(-1))
+				{
+					DebugPrint($"<连接设备失败> {devicePath.ToUpper()}");
+					DebugPrint($"<GetLastError()={WinAPI.GetLastError()}> {WinAPI.ErrorCode(WinAPI.GetLastError())}");
+					return;
+				}
+				// 获取设备属性 (若不需要可删除)
+				HidAPI.HidD_GetAttributes(devHandle, out HidAPI.HidAttributes devAttr);
+				// 找到对应的HID设备信息
+				HidAPI.HidD_GetPreparsedData(devHandle, out IntPtr preparseData);
+				HidAPI.HidP_GetCaps(preparseData, out HidAPI.HIDP_CAPS devCaps);
+				HidAPI.HidD_FreePreparsedData(preparseData);
+				// 创建设备读写通道
+				HidDevice.Add(new USBDevice()
+				{
+					Path = devicePath,
+					Attr = devAttr,
+					Caps = devCaps,
+					Channel = new FileStream(new SafeFileHandle(devHandle, false), FileAccess.ReadWrite, devCaps.InputLength, true)
+				});
+			});
+			if (HidDevice.Count > 0)
+			{
+				HidDevice.ForEach(dev =>
+				{
+					DebugPrint($"设备已连接-> {dev.Path}");
+					UsbReadAsync(dev); // 开始异步读取设备数据
+				});
+				// 通知设备已连接
+				OnDeviceConnected(HidDevice[0].Attr.PID);
 			}
-			// 获取设备属性 (若不需要可删除)
-			HidAPI.HidD_GetAttributes(devHandle, out HidAPI.HidAttributes devAttr);
-			DeviceAttr = devAttr;
-			// 找到对应的HID设备信息
-			HidAPI.HidD_GetPreparsedData(devHandle, out IntPtr preparseData);
-			HidAPI.HidP_GetCaps(preparseData, out HidAPI.HIDP_CAPS devCaps);
-			DeviceCaps = devCaps;
-			HidAPI.HidD_FreePreparsedData(preparseData);
-
-			// 创建设备读写通道
-			HidDevice = new FileStream(new SafeFileHandle(devHandle, false), FileAccess.ReadWrite, DeviceCaps.InputLength, true);
-			// 开始异步读取设备数据
-			DeviceReadAsync();
-			// 通知设备已连接
-			OnDeviceConnected();
 		}
 		/// <summary>
 		/// 异步读数据
 		/// </summary>
-		private void DeviceReadAsync()
+		private void UsbReadAsync(USBDevice dev)
 		{
-			byte[] inputBuffer = new byte[DeviceCaps.InputLength];
-			HidDevice.BeginRead(inputBuffer, 0, DeviceCaps.InputLength, (iResult) =>
+			byte[] inputBuffer = new byte[dev.Caps.InputLength];
+			dev.Channel.BeginRead(inputBuffer, 0, dev.Caps.InputLength, (iResult) =>
 			{
 				byte[] readBuffer = (byte[])(iResult.AsyncState);
 				try
 				{
-					HidDevice.EndRead(iResult);                                         // 等待读数据结束
+					dev.Channel.EndRead(iResult);                                       // 等待读数据结束
 					byte[] readBytes = readBuffer.Skip(1).ToArray();                    // 读取接收的数据（丢弃ReportID,固定为第0位）
-					Transceiver(readBytes);                                             // 转存已读取的数据
-					DeviceReadAsync();                                                  // 启动下一次读操作
+					Transceiver(readBytes);												// 转存已读取的数据
+					UsbReadAsync(dev);													// 启动下一次读操作
 				}
 				catch (Exception e)
 				{
 					DebugPrint($"DeviceReadAsync操作出错:{e.Message}");
-					HidDevice.Close();                                                  // 关闭设备读写通道
-					OnDeviceRemoved();                                                  // 通知设备已断开
+					dev.Channel.Close();                                                // 关闭设备读写通道
+					OnDeviceRemoved(dev);                                               // 通知设备已断开
 				}
 			}, inputBuffer);
-		}
-		/// <summary>
-		/// 发送数据到设备
-		/// </summary>
-		/// <param name="sendBytes">Byte[64]数组</param>
-		private void SendDataBytes(byte[] sendBytes)
-		{
-			// 创建数据发送缓冲区
-			byte[] dataBytes = Enumerable.Repeat((byte)0x00, DeviceCaps.OutputLength).ToArray();
-			//dataBytes[0] = 0;                                                         // 设置 ReportID=0
-			sendBytes.CopyTo(dataBytes, 1);                                             // 准备待发送数据
-			try
-			{
-				HidDevice.Write(dataBytes, 0, DeviceCaps.OutputLength);                 // 发送数据到设备
-			}
-			catch (Exception e)
-			{
-				DebugPrint($"SendDataBytes操作出错:{e.Message}");
-				DataSendingTimer.Stop();                                                // 关闭数据发送超时定时器
-			}
 		}
 		/// <summary>
 		/// 数据收发器
@@ -344,37 +422,51 @@ namespace UsbScreen
 			// 识别收发器启动命令
 			if (readBytes.Length == 1 && readBytes[0] == 0xB0)
 			{
-				RunSendingTimer();                                                      // 启动数据发送超时定时器
-				progress.Maximum = SendBufferQueue.Count;
-				progress.Value = 0;
+				// 初始化进度条
+				this.Dispatcher.Invoke((Action)delegate
+				{
+					progress.Maximum = SendBufferQueue.Count;
+					progress.Value = 0;
+				});
+				// 开始发送数据
+				HidDevice.ForEach(dev =>
+				{
+					if (SendBufferQueue.Count > 0)
+					{
+						dev.SendDataBytes(SendBufferQueue.Dequeue());
+					}
+				});
+				return;
+			}
+			// 数据长度错误
+			if (readBytes.Length != 64)
+			{
+				DebugPrint("<数据长度错误> " + string.Join(" ", readBytes.Select(d => $"{d:X2}"))); // 打印收到的数据,调试使用
+			}
+			// 判断反馈的命令操作结果
+			if (ResultCommand(readBytes) == false)
+			{
+				DebugPrint(string.Join(" ", readBytes.Select(d => $"{d:X2}")));     // 打印收到的数据,调试使用
+				SendBufferQueue.Clear();
+				this.Dispatcher.Invoke((Action)delegate { progress.Value = 0; });   // 清空进度条
 				return;
 			}
 			// 处理收到的数据
-			if (SendBytesTemp != null && readBytes.Length == 64 && readBytes[0] == SendBytesTemp[0])
+			HidDevice.ForEach(dev =>
 			{
-				//DebugPrint(string.Join(" ", readBytes.Select(d => $"{d:X2}")));         // 打印收到的数据,调试使用
-				if (ResultCommand(readBytes) && SendBufferQueue.Count > 0)              // 判断反馈的命令操作结果
+				if (dev.Buffer[0] == readBytes[0])
 				{
-					SendBytesTemp = SendBufferQueue.Dequeue();
-					SendDataBytes(SendBytesTemp);
-					DelayTimerValue = 0;                                                // 更新数据发送超时检测定时器阈值
-					this.Dispatcher.Invoke((Action)delegate                             // 更新进度条
+					if (SendBufferQueue.Count > 0)
 					{
-						++progress.Value;
-						if (SendBytesTemp[0] == 0xB1) progress.Value = 0;
-					});
+						this.Dispatcher.Invoke((Action)delegate { ++progress.Value; });
+						dev.SendDataBytes(SendBufferQueue.Dequeue());
+					}
+					else
+					{
+						this.Dispatcher.Invoke((Action)delegate { progress.Value = 0; });
+					}
 				}
-				else
-				{
-					DataSendingTimer.Stop();
-					SendBufferQueue.Clear();
-					this.Dispatcher.Invoke((Action)delegate { progress.Value = 0; });   // 清空进度条
-				}
-			}
-			else
-			{
-				DebugPrint(":: " + string.Join(" ", readBytes.Select(d => $"{d:X2}"))); // 打印收到的数据,调试使用
-			}
+			});
 		}
 		/// <summary>
 		/// 命令操作结果判断
@@ -410,24 +502,22 @@ namespace UsbScreen
 					DebugPrint("[任务中止] 未知错误");
 					break;
 			}
-			DebugPrint(string.Join(" ", CommandBytes.Select(d => $"{d:X2}")));         // 打印收到的数据,调试使用
 			return false;
 		}
 		/// <summary>
 		/// 设备已连接事件
 		/// </summary>
-		private void OnDeviceConnected()
+		private void OnDeviceConnected(int pid)
 		{
 			this.Dispatcher.Invoke((Action)delegate
 			{
 				progress.Value = 0;
-				DebugPrint($"设备已连接-> VID:{DeviceAttr.VID:X4} PID:{DeviceAttr.PID:X4} REV:{DeviceAttr.VER:X4} ReportIO:{DeviceCaps.InputLength}/{DeviceCaps.OutputLength}");
-				if (DeviceAttr.PID == 0x2324)
+				if (pid == 0x2324)
 				{
 					Refresh.IsEnabled = true;
 					LoadHex.IsEnabled = true;
 				}
-				if (DeviceAttr.PID == 0xC551 && Firmware.Count > 0)
+				else if (pid == 0xC551 && Firmware.Count > 0)
 				{
 					Firmware.ForEach(b => SendBufferQueue.Enqueue(b));
 					Transceiver(new byte[] { 0xB0 });// 启动数据收发器
@@ -437,53 +527,14 @@ namespace UsbScreen
 		/// <summary>
 		/// 设备已断开事件
 		/// </summary>
-		private void OnDeviceRemoved()
+		private void OnDeviceRemoved(USBDevice dev)
 		{
 			this.Dispatcher.Invoke((Action)delegate
 			{
-				DebugPrint($"连接已断开-> VID:{DeviceAttr.VID:X4} PID:{DeviceAttr.PID:X4} REV:{DeviceAttr.VER:X4}");
+				DebugPrint($"连接已断开-> {dev.Path}");
 				Refresh.IsEnabled = false;
 				LoadHex.IsEnabled = false;
 			});
-		}
-		/// <summary>
-		/// 数据发送超时检测定时器
-		/// </summary>
-		private DispatcherTimer DataSendingTimer = null;
-		private uint DelayTimerValue = 0;
-		private void RunSendingTimer()
-		{
-			DelayTimerValue = 0;
-			if (DataSendingTimer == null)
-			{
-				DataSendingTimer = new DispatcherTimer()
-				{
-					Interval = new TimeSpan(0, 0, 0, 0, 100)    // 定时器触发间隔100ms
-				};
-				DataSendingTimer.Tick += delegate
-				{
-					if (SendBytesTemp[0] == 0xB1 || SendBytesTemp[0] == 0x1B)
-					{
-						DataSendingTimer.Stop();                // 重启指令不会得到反馈结果(关闭数据发送超时定时器)
-						return;
-					}
-					if (++DelayTimerValue < 10) return;
-					DebugPrint("数据传输超时,将立即重试...");
-					DelayTimerValue = 0;
-					SendDataBytes(SendBytesTemp);
-				};
-			}
-			if (!DataSendingTimer.IsEnabled)
-			{
-				if (SendBufferQueue.Count == 0)
-				{
-					DataSendingTimer.Stop();
-					return;
-				}
-				SendBytesTemp = SendBufferQueue.Dequeue();
-				SendDataBytes(SendBytesTemp);
-				DataSendingTimer.Start();
-			}
 		}
 
 
