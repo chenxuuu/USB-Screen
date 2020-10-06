@@ -25,7 +25,7 @@ namespace UsbScreen
 		/// <summary>
 		/// 缓存固件数据
 		/// </summary>
-		public List<byte[]> Firmware { get; set; }
+		public static List<byte[]> Firmware { get; set; }
 		/// <summary>
 		/// USB设备类
 		/// </summary>
@@ -75,11 +75,11 @@ namespace UsbScreen
 		/// <summary>
 		/// HID设备类集合
 		/// </summary>
-		public List<USBDevice> HidDevice = new List<USBDevice>();
+		public static List<USBDevice> HidDevice = new List<USBDevice>();
 		/// <summary>
 		/// 数据发送缓冲队列
 		/// </summary>
-		public Queue<byte[]> SendBufferQueue = new Queue<byte[]>();
+		public static Queue<byte[]> SendBufferQueue = new Queue<byte[]>();
 		///// <summary>
 		///// 设备数据读写通道
 		///// </summary>
@@ -278,12 +278,19 @@ namespace UsbScreen
 		{
 			// 获取HID设备列表
 			List<string> deviceList = HidAPI.GetHidDeviceList();
-			DebugPrint($"[遍历HID设备列表] 找到 {deviceList.Count} 个设备");
+			DebugPrint($"[遍历HID设备列表] 找到 {deviceList.Count} 个HID标准设备");
 			// 对列表排序
 			deviceList.Sort();
 			// 筛选符合要求的设备
 			deviceList = deviceList.Select(s => s.ToUpper()).Where(str => str.Contains("VID_2333")).ToList();
 			DebugPrint($"[筛选HID设备列表] 找到 {deviceList.Count} 个符合要求的设备");
+			// 筛选新添加的设备
+			if (HidDevice != null)
+			{
+				deviceList = deviceList.Where(str => !HidDevice.Exists(dev => dev.Path == str)).ToList();
+			}
+			DebugPrint($"[筛选HID设备列表] 找到 {deviceList.Count} 个刚添加的新设备");
+			// 连接新添加的设备
 			if (deviceList.Count > 0)
 			{
 				DeviceList.ItemsSource = deviceList;
@@ -302,7 +309,6 @@ namespace UsbScreen
 		/// <param name="devicePath">目标设备地址</param>
 		private void ConnectDevice(List<string> deviceList)
 		{
-			HidDevice.Clear();
 			deviceList.ForEach(devicePath =>
 			{
 				DebugPrint($"<连接设备> {devicePath}");
@@ -361,6 +367,7 @@ namespace UsbScreen
 				{
 					DebugPrint($"DeviceReadAsync操作出错:{e.Message}");
 					dev.Channel.Close();                                                // 关闭设备读写通道
+					HidDevice = HidDevice.SkipWhile(d => d.Path == dev.Path).ToList();	// 移除已断开的设备
 					OnDeviceRemoved(dev);                                               // 通知设备已断开
 				}
 			}, inputBuffer);
@@ -385,13 +392,13 @@ namespace UsbScreen
 				DebugPrint($"<数据传输开始> 需要发送 {SendBufferQueue.Count} 个数据包");// 数据传输耗时统计
 				watch.Restart();
 				// 开始发送数据
-				HidDevice.ForEach(dev =>
+				foreach(USBDevice dev in HidDevice)
 				{
 					if (SendBufferQueue.Count > 0)
 					{
 						dev.SendDataBytes(SendBufferQueue.Dequeue());
 					}
-				});
+				}
 				return;
 			}
 			// 数据长度错误
@@ -410,12 +417,18 @@ namespace UsbScreen
 				return;
 			}
 			// 处理收到的数据
-			HidDevice.ForEach(dev =>
+			foreach (USBDevice dev in HidDevice)
 			{
 				if (dev.Buffer == null) return;
-				if (dev.Buffer[0] == readBytes[0] && dev.Buffer[2] == readBytes[2] && dev.Buffer[3] == readBytes[3])
+				if ((dev.Buffer[0] == readBytes[0]) && (dev.Buffer[2] == readBytes[2]) && (dev.Buffer[3] == readBytes[3]))
 				{
-					if (SendBufferQueue.Count > 0) dev.SendDataBytes(SendBufferQueue.Dequeue());
+					lock (SendBufferQueue)
+					{
+						if (SendBufferQueue.Count > 0)
+						{
+							dev.SendDataBytes(SendBufferQueue.Dequeue());
+						}
+					}
 					this.Dispatcher.Invoke((Action)delegate
 					{
 						++progress.Value;
@@ -427,7 +440,7 @@ namespace UsbScreen
 						}
 					});
 				}
-			});
+			}
 		}
 		/// <summary>
 		/// Stopwatch计时器
