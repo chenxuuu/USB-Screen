@@ -379,7 +379,11 @@ namespace UsbScreen
 				{
 					progress.Maximum = SendBufferQueue.Count;
 					progress.Value = 0;
+					progress.Visibility = Visibility.Visible;
 				});
+				// 开始统计时间
+				DebugPrint($"<数据传输开始> 需要发送 {SendBufferQueue.Count} 个数据包");// 数据传输耗时统计
+				watch.Restart();
 				// 开始发送数据
 				HidDevice.ForEach(dev =>
 				{
@@ -401,26 +405,34 @@ namespace UsbScreen
 				DebugPrint(string.Join(" ", readBytes.Select(d => $"{d:X2}")));     // 打印收到的数据,调试使用
 				SendBufferQueue.Clear();
 				this.Dispatcher.Invoke((Action)delegate { progress.Value = 0; });   // 清空进度条
+				watch.Stop();
+				DebugPrint($"<数据传输结束> 本次发送 {progress.Value} 个数据包,耗时 {watch.Elapsed}");
 				return;
 			}
 			// 处理收到的数据
 			HidDevice.ForEach(dev =>
 			{
 				if (dev.Buffer == null) return;
-				if (dev.Buffer[0] == readBytes[0])
+				if (dev.Buffer[0] == readBytes[0] && dev.Buffer[2] == readBytes[2] && dev.Buffer[3] == readBytes[3])
 				{
-					if (SendBufferQueue.Count > 0)
+					if (SendBufferQueue.Count > 0) dev.SendDataBytes(SendBufferQueue.Dequeue());
+					this.Dispatcher.Invoke((Action)delegate
 					{
-						this.Dispatcher.Invoke((Action)delegate { ++progress.Value; });
-						dev.SendDataBytes(SendBufferQueue.Dequeue());
-					}
-					else
-					{
-						this.Dispatcher.Invoke((Action)delegate { progress.Value = 0; });
-					}
+						++progress.Value;
+						if (progress.Value == progress.Maximum)
+						{
+							watch.Stop();
+							DebugPrint($"<数据传输结束> 本次发送 {progress.Value} 个数据包,耗时 {watch.Elapsed}");
+							progress.Visibility = Visibility.Collapsed;
+						}
+					});
 				}
 			});
 		}
+		/// <summary>
+		/// Stopwatch计时器
+		/// </summary>
+		Stopwatch watch = new Stopwatch();
 		/// <summary>
 		/// 命令操作结果判断
 		/// </summary>
@@ -490,7 +502,6 @@ namespace UsbScreen
 				LoadHex.IsEnabled = false;
 			});
 		}
-
 
 		/// <summary>
 		/// 转化Hex文件为Bin数据
