@@ -21,10 +21,19 @@
 #define ChipIdData4				(*(PUINT8C)(0x3FFB))		// ChipID保留
 #define ChipIdData5				(*(PUINT8C)(0x3FFA))		// ChipID最高字节
 
-UINT8X	Ep0Buffer[0xC0] _at_ 0x0000;				// 端点0 OUT&IN 64byte收发共用缓冲区 + 端点4 OUT&IN 64byte*2收发缓冲区
-UINT8X	Ep1Buffer[0x80] _at_ 0x00C0;				// 端点1 OUT&IN 64byte*2收发缓冲区
-UINT8X	Ep2Buffer[0x80]	_at_ 0x0140;				// 端点2 OUT&IN 64byte*2收发缓冲区
-UINT8X	Ep3Buffer[0x80]	_at_ 0x01C0;				// 端点3 OUT&IN 64byte*2收发缓冲区
+struct UsbBuffer{
+	UINT8 EP0[0x40];	// 端点0 OUT&IN 64byte收发共用缓冲区
+	UINT8 EP4[0x80];	// 端点4 OUT&IN 64byte*2收发缓冲区
+	UINT8 EP1[0x80];	// 端点1 OUT&IN 64byte*2收发缓冲区
+	UINT8 EP2[0x80];	// 端点2 OUT&IN 64byte*2收发缓冲区
+	UINT8 EP3[0x80];	// 端点3 OUT&IN 64byte*2收发缓冲区
+}xdata Buffer _at_ 0x0000;
+#define Ep0Buffer Buffer.EP0
+#define Ep1Buffer Buffer.EP1
+#define Ep2Buffer Buffer.EP2
+#define Ep3Buffer Buffer.EP3
+#define Ep4Buffer Buffer.EP4
+
 #define UsbSetupBuf ((PUSB_SETUP_REQ)Ep0Buffer) 	// 定义Setup包结构体
 #define HIDbReqType UsbSetupBuf->bRequestType
 #define HIDbRequest UsbSetupBuf->bRequest
@@ -66,12 +75,12 @@ void RunCommand(UINT8* pFlash){
 		case 0x80:									// 读CodeFlash命令
 		{
 			// 设置Flash操作地址
-			ROM_ADDR_L	= Ep0Buffer[0x82];			// 写入地址低位
-			ROM_ADDR_H	= Ep0Buffer[0x83];			// 写入地址高位
+			ROM_ADDR_L	= pFlash[2];				// 写入地址低位
+			ROM_ADDR_H	= pFlash[3];				// 写入地址高位
 			// 循环读取Flash数据
 			for(i=0; i<length; ++i)
 			{
-				Ep0Buffer[0x84+i] = *(PUINT8C)ROM_ADDR;
+				pFlash[4+i] = *(PUINT8C)ROM_ADDR;
 				++ROM_ADDR;
 			}
 			break;
@@ -83,13 +92,13 @@ void RunCommand(UINT8* pFlash){
 			SAFE_MOD 	= 0xAA;
 			GLOBAL_CFG	|= bCODE_WE | bDATA_WE;
 			// 设置CodeFlash操作地址
-			ROM_ADDR_L	= Ep0Buffer[0x82];			// 写入地址低位
-			ROM_ADDR_H	= Ep0Buffer[0x83];			// 写入地址高位
+			ROM_ADDR_L	= pFlash[2];			// 写入地址低位
+			ROM_ADDR_H	= pFlash[3];			// 写入地址高位
 			// 写入CodeFlash数据
 			for(i=0; i<length; i+=2)
 			{
-				ROM_DATA_L	= Ep0Buffer[0x84+i];	// 写入数据低位
-				ROM_DATA_H	= Ep0Buffer[0x85+i];	// 写入数据高位
+				ROM_DATA_L	= pFlash[4+i];	// 写入数据低位
+				ROM_DATA_H	= pFlash[5+i];	// 写入数据高位
 				ROM_CTRL	= ROM_CMD_PROG;			// 执行CodeFlash写入操作
 				ReCode = ROM_STATUS_RECODE;
 				if(ReCode) break;					// 检查操作结果
@@ -103,7 +112,7 @@ void RunCommand(UINT8* pFlash){
 		}
 		case 0x90:									// 读DataFlash命令
 		{
-			ROM_ADDR_L  = Ep0Buffer[0x82];			// 写入地址低位
+			ROM_ADDR_L  = pFlash[2];				// 写入地址低位
 			ROM_ADDR_H	= 0xC0;						// 写入地址高位(CH551的Data地址范围是0xC000~0xC0FF,仅偶地址有效)
 			pFlash += 4;
 			for(i=0; i<length; ++i)
@@ -158,41 +167,41 @@ void RunCommand(UINT8* pFlash){
 		{
 			LCD_CS = 1;
 			LCD_CS = 0;
-			SPIMasterModeSet();
-			SPI_SendCMD(0x2A);// 列地址设置(0-239)
+			SPIMasterModeSet();	// 启用硬件SPI
+			SPI_SendCMD(0x2A);	// 列地址设置(0-239)
 			SPI_SendDAT(0x00);
 			SPI_SendDAT(pFlash[2]);
 			SPI_SendDAT(0x00);
 			SPI_SendDAT(0xEF);
-			SPI_SendCMD(0x2B);// 行地址设置(0-239)
+			SPI_SendCMD(0x2B);	// 行地址设置(0-239)
 			SPI_SendDAT(0x00);
 			SPI_SendDAT(pFlash[3]);
 			SPI_SendDAT(0x00);
 			SPI_SendDAT(0xEF);
-			SPI_SendCMD(0x2C);// 写LCD数据存储器
+			SPI_SendCMD(0x2C);	// 写LCD数据存储器
 			for(i=4; length; --length)
 			{
 				SPI_SendDAT(pFlash[i]);
 				++i;
 			}
-			SPI0_CTRL = 0x02;	// 禁用硬件SPI
+			SPI0_CTRL = 0x02;	// 关闭硬件SPI
 			break;
 		}
 		case 0xFB:		// 软件SPI更新LCD数据
 		{
 			LCD_CS = 1;
 			LCD_CS = 0;
-			SPI_Send_CMD(0x2A);// 列地址设置(0-239)
+			SPI_Send_CMD(0x2A);	// 列地址设置(0-239)
 			SPI_Send_DAT(0x00);
 			SPI_Send_DAT(pFlash[2]);
 			SPI_Send_DAT(0x00);
 			SPI_Send_DAT(0xEF);
-			SPI_Send_CMD(0x2B);// 行地址设置(0-239)
+			SPI_Send_CMD(0x2B);	// 行地址设置(0-239)
 			SPI_Send_DAT(0x00);
 			SPI_Send_DAT(pFlash[3]);
 			SPI_Send_DAT(0x00);
 			SPI_Send_DAT(0xEF);
-			SPI_Send_CMD(0x2C);// 写LCD数据存储器
+			SPI_Send_CMD(0x2C);	// 写LCD数据存储器
 			for(i=4; length; --length)
 			{
 				SPI_Send_DAT(pFlash[i]);
@@ -225,7 +234,7 @@ void USB_DeviceInit( void )
 	USB_CTRL	= 0x29;		// 0b0010 1001 总线信号12M全速模式，使能USB设备功能，启用内部上拉，使能DMA与DMA中断
 	UDEV_CTRL	= 0x31;		// 0b0011 0001 使能USB接收，禁用DP&DM下拉，物理端口12M全速模式，使能USB物理端口
 	
-    UEP0_DMA	= Ep0Buffer;						// 端点0 数据传输地址(端点0单64byte收发共用缓冲区)
+    UEP0_DMA	= Ep0Buffer;							// 端点0 数据传输地址(端点0单64byte收发共用缓冲区)
     UEP0_CTRL	= UEP_R_RES_ACK | UEP_T_RES_NAK;	// 端点0 IN返回NAK，OUT返回ACK
     UEP4_CTRL	= UEP_R_RES_ACK | UEP_T_RES_NAK;	// 端点4 IN返回NAK，OUT返回ACK (注：端点4不支持同步触发位自动翻转功能)
     UEP4_1_MOD	= 0x4C;								// 端点0单64byte收发共用缓冲区，端点4 64byte接收缓冲区&64byte发送缓冲区
@@ -278,45 +287,34 @@ void HID_DeviceInterrupt(void) interrupt INT_NO_USB
 				break;
 			case UIS_TOKEN_IN  | 4:													// 端点4 上传
 				UEP4_T_LEN = 0;
+				UEP4_CTRL ^= bUEP_T_TOG;											// 翻转同步标志
 				UEP4_CTRL = UEP4_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_NAK;			// 默认应答NAK
 				break;
 			case UIS_TOKEN_OUT | 1:													// 端点1 下传
-				if (U_TOG_OK)                                                     	// 不同步的数据包将丢弃
-				{
-					memcpy(Ep1Buffer+0x40, Ep1Buffer, 64);							// 转存数据，数据从Ep0Buffer第0x40地址开始存放
-					RunCommand(Ep1Buffer+0x40);										// 处理数据 (并将需要回传的数据写入Ep0Buffer+0x80发送缓冲区)
-					UEP1_T_LEN = 0x40;
-					UEP1_CTRL = UEP1_CTRL & ~ MASK_UEP_T_RES | UEP_T_RES_ACK;		// 有数据时上传数据并应答ACK
-				}
+				RunCommand(Ep1Buffer);												// 处理数据
+				memcpy(Ep1Buffer+0x40, Ep1Buffer, 4);								// 回传操作结果
+				UEP1_T_LEN = 0x40;
+				UEP1_CTRL = UEP1_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_ACK;			// 有数据时上传数据并应答ACK
 				break;
 			case UIS_TOKEN_OUT | 2:													// 端点2 下传
-				if (U_TOG_OK)                                                     	// 不同步的数据包将丢弃
-				{
-					memcpy(Ep2Buffer+0x40, Ep2Buffer, 64);							// 转存数据，数据从Ep0Buffer第0x40地址开始存放
-					RunCommand(Ep2Buffer+0x40);										// 处理数据 (并将需要回传的数据写入Ep0Buffer+0x80发送缓冲区)
-					UEP2_T_LEN = 0x40;
-					UEP2_CTRL = UEP2_CTRL & ~ MASK_UEP_T_RES | UEP_T_RES_ACK;		// 有数据时上传数据并应答ACK
-				}
+				RunCommand(Ep2Buffer);												// 处理数据
+				memcpy(Ep2Buffer+0x40, Ep2Buffer, 4);								// 回传操作结果
+				UEP2_T_LEN = 0x40;
+				UEP2_CTRL = UEP2_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_ACK;			// 有数据时上传数据并应答ACK
 				break;
 			case UIS_TOKEN_OUT | 3:													// 端点3 下传
-				if (U_TOG_OK)                                                     	// 不同步的数据包将丢弃
-				{
-					memcpy(Ep3Buffer+0x40, Ep3Buffer, 64);							// 转存数据，数据从Ep0Buffer第0x40地址开始存放
-					RunCommand(Ep3Buffer+0x40);										// 处理数据 (并将需要回传的数据写入Ep0Buffer+0x80发送缓冲区)
-					UEP3_T_LEN = 0x40;
-					UEP3_CTRL = UEP3_CTRL & ~ MASK_UEP_T_RES | UEP_T_RES_ACK;		// 有数据时上传数据并应答ACK
-				}
+				RunCommand(Ep3Buffer);												// 处理数据
+				memcpy(Ep3Buffer+0x40, Ep3Buffer, 4);								// 回传操作结果
+				UEP3_T_LEN = 0x40;
+				UEP3_CTRL = UEP3_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_ACK;			// 有数据时上传数据并应答ACK
 				break;
 			case UIS_TOKEN_OUT | 4:													// 端点4 下传
-				if (U_TOG_OK)                                                     	// 不同步的数据包将丢弃
-				{
-					memcpy(Ep0Buffer+0x80, Ep0Buffer+0x40, 64);						// 转存数据，数据从Ep0Buffer第0x40地址开始存放
-					UEP4_CTRL ^= bUEP_R_TOG; 										// 成功接收数据，翻转端点4接收器同步标志位
-					RunCommand(Ep0Buffer+0x80);										// 处理数据 (并将需要回传的数据写入Ep0Buffer+0x80发送缓冲区)
-					UEP4_T_LEN = 0x40;
-					UEP4_CTRL = UEP4_CTRL & 0x80 ? UEP4_CTRL&0x8F : UEP4_CTRL|0x40;	// 设置端点4发送器同步标志位
-					UEP4_CTRL = UEP4_CTRL & ~ MASK_UEP_T_RES | UEP_T_RES_ACK;		// 有数据时上传数据并应答ACK
-				}
+				//if(bUIS_TOG_OK == false) break;									// 检查同步标志,抛弃不同步的数据
+				RunCommand(Ep4Buffer);												// 处理数据
+				memcpy(Ep4Buffer+0x40, Ep4Buffer, 4);								// 回传操作结果
+				UEP4_T_LEN = 0x40;
+				UEP4_CTRL ^= bUEP_R_TOG; 											// 成功接收数据，翻转同步标志
+				UEP4_CTRL = UEP4_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_ACK;			// 有数据时上传数据并应答ACK
 				break;
 			case UIS_TOKEN_SETUP | 0:												// SETUP事务,用于USB设备初始化
 			{
@@ -335,7 +333,7 @@ void HID_DeviceInterrupt(void) interrupt INT_NO_USB
 						{
 							case HID_GET_REPORT:
 								length = 1;	
-								Ep0Buffer[0] = DevStatus;
+								HIDbReqType = DevStatus;
 								break;
 							case HID_GET_IDLE:
 								break;	
@@ -569,7 +567,7 @@ void HID_DeviceInterrupt(void) interrupt INT_NO_USB
 			case UIS_TOKEN_OUT | 0:											// 端点0 下传
 				if(SetupRequest == HID_SET_REPORT)
 				{
-					DevStatus = Ep0Buffer[0];										// 保存设备状态(这里用作键盘LED指示灯状态)
+					DevStatus = HIDbReqType;										// 保存设备状态
 				}
 				UEP0_CTRL ^= bUEP_R_TOG;								// 同步标志位翻转
 				break;

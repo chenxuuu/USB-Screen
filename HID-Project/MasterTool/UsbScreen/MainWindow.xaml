@@ -47,8 +47,10 @@
 						<Button Content="刷新图像" Height="25" Margin="0,5,0,0" Focusable="False" x:Name="Refresh" Cursor="Hand"/>
 					</StackPanel>
 				</Grid>
+				<Button Content="暂未使用" Height="25" Margin="0,5,0,0" Focusable="False" Cursor="Hand" Visibility="Hidden"/>
+				<Button Content="暂未使用" Height="25" Margin="0,5,0,0" Focusable="False" Cursor="Hand" Visibility="Hidden"/>
+				<Button Content="暂未使用" Height="25" Margin="0,5,0,0" Focusable="False" Cursor="Hand" Visibility="Hidden"/>
 				<Button Content="更新固件" Height="25" Margin="0,5,0,0" Focusable="False" x:Name="LoadHex" Cursor="Hand"/>
-
 			</StackPanel>
 		</DockPanel>
     </DockPanel>

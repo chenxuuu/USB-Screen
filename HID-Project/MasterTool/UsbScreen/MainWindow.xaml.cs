@@ -4,16 +4,11 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using System.Windows.Threading;
 using HidApi;
 using Microsoft.Win32;
@@ -55,7 +50,7 @@ namespace UsbScreen
 			/// <summary>
 			/// 暂存待发送的数据
 			/// </summary>
-			public byte[] Buffer;
+			public byte[] Buffer { get; set; }
 			/// <summary>
 			/// 发送数据到设备
 			/// </summary>
@@ -74,52 +69,8 @@ namespace UsbScreen
 				catch (Exception e)
 				{
 					DebugPrint($"SendDataBytes操作出错:{e.Message}");
-					//DataSendingTimer.Stop();                                                // 关闭数据发送超时定时器
 				}
 			}
-			///// <summary>
-			///// 数据发送超时检测定时器
-			///// </summary>
-			//private DispatcherTimer DataSendingTimer = null;
-			//public uint DelayTimerValue = 0;
-			///// <summary>
-			///// 启动数据发送
-			///// </summary>
-			//public void RunSendingTimer(byte[] sendTemp)
-			//{
-			//	BufTmp = sendTemp;
-			//	DelayTimerValue = 0;
-			//	if (DataSendingTimer == null)
-			//	{
-			//		DataSendingTimer = new DispatcherTimer()
-			//		{
-			//			Interval = new TimeSpan(0, 0, 0, 0, 100)    // 定时器触发间隔100ms
-			//		};
-			//		DataSendingTimer.Tick += delegate
-			//		{
-			//			if (sendTemp[0] == 0xB1 || sendTemp[0] == 0x1B)
-			//			{
-			//				DataSendingTimer.Stop();                // 重启指令不会得到反馈结果(关闭数据发送超时定时器)
-			//				return;
-			//			}
-			//			if (++DelayTimerValue < 10) return;
-			//			DebugPrint("数据传输超时,将立即重试...");
-			//			DelayTimerValue = 0;
-			//			SendDataBytes(sendTemp);
-			//		};
-			//	}
-			//	if (!DataSendingTimer.IsEnabled)
-			//	{
-			//		if (SendBufferQueue.Count == 0)
-			//		{
-			//			DataSendingTimer.Stop();
-			//			return;
-			//		}
-			//		SendBytesTemp = SendBufferQueue.Dequeue();
-			//		SendDataBytes(SendBytesTemp);
-			//		DataSendingTimer.Start();
-			//	}
-			//}
 		}
 		/// <summary>
 		/// HID设备类集合
@@ -454,6 +405,7 @@ namespace UsbScreen
 			// 处理收到的数据
 			HidDevice.ForEach(dev =>
 			{
+				if (dev.Buffer == null) return;
 				if (dev.Buffer[0] == readBytes[0])
 				{
 					if (SendBufferQueue.Count > 0)

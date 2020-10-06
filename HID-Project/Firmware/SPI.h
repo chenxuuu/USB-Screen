@@ -200,6 +200,6 @@ void LCD_Init(void)
             }
         }
     }
-	SPI0_CTRL = 0x02;	// 禁用硬件SPI
+	SPI0_CTRL = 0x02;	// 关闭硬件SPI
 }
 #endif

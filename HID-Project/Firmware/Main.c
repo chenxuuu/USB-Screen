@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <string.h>
 #include "CH552.h"
 #include "TypeDefines.h"
