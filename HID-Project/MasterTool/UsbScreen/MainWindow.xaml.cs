@@ -25,7 +25,7 @@ namespace UsbScreen
 		/// <summary>
 		/// 缓存固件数据
 		/// </summary>
-		public List<byte[]> Firmware = new List<byte[]>();
+		public List<byte[]> Firmware { get; set; }
 		/// <summary>
 		/// USB设备类
 		/// </summary>
@@ -64,7 +64,7 @@ namespace UsbScreen
 				sendBytes.CopyTo(dataBytes, 1);                                             // 准备待发送数据
 				try
 				{
-					Channel.Write(dataBytes, 0, Caps.OutputLength);							// 发送数据到设备
+					Channel.Write(dataBytes, 0, Caps.OutputLength);                         // 发送数据到设备
 				}
 				catch (Exception e)
 				{
@@ -207,6 +207,7 @@ namespace UsbScreen
 				//{
 				//	Debug.WriteLine(string.Join(" ", b.Select(i => $"{i:X2}")));
 				//});
+				SendBufferQueue.Clear();
 				SendBufferQueue.Enqueue(new byte[] { 0xB1, 0x00 });// 进入Bootloader模式命令
 				Transceiver(new byte[] { 0xB0 });// 启动数据收发器
 			};
@@ -353,8 +354,8 @@ namespace UsbScreen
 				{
 					dev.Channel.EndRead(iResult);                                       // 等待读数据结束
 					byte[] readBytes = readBuffer.Skip(1).ToArray();                    // 读取接收的数据（丢弃ReportID,固定为第0位）
-					Transceiver(readBytes);												// 转存已读取的数据
-					UsbReadAsync(dev);													// 启动下一次读操作
+					Transceiver(readBytes);                                             // 转存已读取的数据
+					UsbReadAsync(dev);                                                  // 启动下一次读操作
 				}
 				catch (Exception e)
 				{
@@ -469,9 +470,10 @@ namespace UsbScreen
 					Refresh.IsEnabled = true;
 					LoadHex.IsEnabled = true;
 				}
-				else if (pid == 0xC551 && Firmware.Count > 0)
+				else if (pid == 0xC551 && Firmware != null && Firmware.Count > 0)
 				{
 					Firmware.ForEach(b => SendBufferQueue.Enqueue(b));
+					Firmware.Clear();
 					Transceiver(new byte[] { 0xB0 });// 启动数据收发器
 				}
 			});

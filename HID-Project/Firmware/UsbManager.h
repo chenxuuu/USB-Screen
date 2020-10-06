@@ -543,16 +543,16 @@ void HID_DeviceInterrupt(void) interrupt INT_NO_USB
 				}
 				break;
 			}
-			case UIS_TOKEN_IN  | 0:												// 端点0 上传
-				switch(SetupRequest)													// 分析描述符类型
+			case UIS_TOKEN_IN  | 0:													// 端点0 上传
+				switch(SetupRequest)												// 分析描述符类型
 				{
 					case USB_GET_DESCRIPTOR:
-						length = SetupLength >= 8 ? 8 : SetupLength;	// 本次传输长度
-						memcpy(Ep0Buffer, pDescr, length );				// 加载上传数据
+						length = SetupLength >= 8 ? 8 : SetupLength;				// 本次传输长度
+						memcpy(Ep0Buffer, pDescr, length );							// 加载上传数据
 						SetupLength -= length;
 						pDescr += length;
 						UEP0_T_LEN = length;
-						UEP0_CTRL ^= bUEP_T_TOG;						// 同步标志位翻转
+						UEP0_CTRL ^= bUEP_T_TOG;									// 同步标志位翻转
 						break;
 					case USB_SET_ADDRESS:
 						USB_DEV_AD = USB_DEV_AD & bUDA_GP_BIT | SetupLength;
@@ -564,12 +564,12 @@ void HID_DeviceInterrupt(void) interrupt INT_NO_USB
 						break;
 				}
 				break;
-			case UIS_TOKEN_OUT | 0:											// 端点0 下传
+			case UIS_TOKEN_OUT | 0:													// 端点0 下传
 				if(SetupRequest == HID_SET_REPORT)
 				{
 					DevStatus = HIDbReqType;										// 保存设备状态
 				}
-				UEP0_CTRL ^= bUEP_R_TOG;								// 同步标志位翻转
+				UEP0_CTRL ^= bUEP_R_TOG;											// 同步标志位翻转
 				break;
 			default:
 				break;
@@ -578,7 +578,7 @@ void HID_DeviceInterrupt(void) interrupt INT_NO_USB
     }
     else if (UIF_BUS_RST)                                                           // USB总线复位中断
     {
-        USB_DEV_AD = 0x00;														// USB总线复位，重置设备地址
+        USB_DEV_AD = 0x00;															// USB总线复位，重置设备地址
 		USB_INT_FG = 0xFF;                                                          // 总线复位，清除全部中断标志
     }
 	else if (UIF_SUSPEND)															// 总线挂起或唤醒中断
