@@ -292,26 +292,26 @@ void HID_DeviceInterrupt(void) interrupt INT_NO_USB
 				break;
 			case UIS_TOKEN_OUT | 1:													// 端点1 下传
 				RunCommand(Ep1Buffer);												// 处理数据
-				memcpy(Ep1Buffer+0x40, Ep1Buffer, 4);								// 回传操作结果
+				memcpy(Ep1Buffer+0x40, Ep1Buffer, 64);								// 回传操作结果
 				UEP1_T_LEN = 0x40;
 				UEP1_CTRL = UEP1_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_ACK;			// 有数据时上传数据并应答ACK
 				break;
 			case UIS_TOKEN_OUT | 2:													// 端点2 下传
 				RunCommand(Ep2Buffer);												// 处理数据
-				memcpy(Ep2Buffer+0x40, Ep2Buffer, 4);								// 回传操作结果
+				memcpy(Ep2Buffer+0x40, Ep2Buffer, 64);								// 回传操作结果
 				UEP2_T_LEN = 0x40;
 				UEP2_CTRL = UEP2_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_ACK;			// 有数据时上传数据并应答ACK
 				break;
 			case UIS_TOKEN_OUT | 3:													// 端点3 下传
 				RunCommand(Ep3Buffer);												// 处理数据
-				memcpy(Ep3Buffer+0x40, Ep3Buffer, 4);								// 回传操作结果
+				memcpy(Ep3Buffer+0x40, Ep3Buffer, 64);								// 回传操作结果
 				UEP3_T_LEN = 0x40;
 				UEP3_CTRL = UEP3_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_ACK;			// 有数据时上传数据并应答ACK
 				break;
 			case UIS_TOKEN_OUT | 4:													// 端点4 下传
 				//if(bUIS_TOG_OK == false) break;									// 检查同步标志,抛弃不同步的数据
 				RunCommand(Ep4Buffer);												// 处理数据
-				memcpy(Ep4Buffer+0x40, Ep4Buffer, 4);								// 回传操作结果
+				memcpy(Ep4Buffer+0x40, Ep4Buffer, 64);								// 回传操作结果
 				UEP4_T_LEN = 0x40;
 				UEP4_CTRL ^= bUEP_R_TOG; 											// 成功接收数据，翻转同步标志
 				UEP4_CTRL = UEP4_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_ACK;			// 有数据时上传数据并应答ACK
