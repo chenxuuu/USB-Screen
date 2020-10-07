@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -406,13 +407,13 @@ namespace UsbScreen
 				// 开始统计时间
 				DebugPrint($"<数据传输开始> 需要发送 {SendBufferQueue.Count} 个数据包");// 数据传输耗时统计
 				watch.Restart();
-				// 开始发送数据
+				// 开始发送数据(多通道并行发送)
 				HidDevice.ForEach(dev =>
 				{
-					if (SendBufferQueue.TryDequeue(out byte[] result))
+					Task.Factory.StartNew(() =>
 					{
-						dev.Buffer = result;
-					}
+						if (SendBufferQueue.TryDequeue(out byte[] result)) dev.Buffer = result;
+					});
 				});
 				return;
 			}
@@ -425,7 +426,6 @@ namespace UsbScreen
 			if (ResultCommand(readBytes) == false)
 			{
 				DebugPrint(string.Join(" ", readBytes.Select(d => $"{d:X2}")));     // 打印收到的数据,调试使用
-				//SendBufferQueue.Clear();
 				this.Dispatcher.Invoke((Action)delegate { progress.Value = 0; });   // 清空进度条
 				watch.Stop();
 				DebugPrint($"<数据传输结束> 成功发送 {progress.Value} 个数据包,耗时 {watch.Elapsed}");

@@ -10,15 +10,7 @@ namespace HidApi
 {
 	public class HidAPI
 	{
-		public static string LinkedDevice = null;       // 保存当前已连接设备的物理地址
-		public static int sendReportLength;             // HID下传数据长度
-		public static int readReportLength;             // HID上传数据长度
 		private const int MaxHidDevices = 256;          // HID最大设备数量
-
-		public static FileStream hidDevice;             // 设备读写流
-		public static IntPtr devHandle = IntPtr.Zero;   // 设备句柄
-		public static HidAttributes devAttr;            // 设备属性
-
 		/// <summary>
 		/// 结构体包含有关HIDClass设备的供应商信息
 		/// <para>Size 属性长度(sizeof(HidAttributes))</para>
@@ -86,7 +78,7 @@ namespace HidApi
 		/// <param name="Attributes">返回指定设备的属性集合</param>
 		/// <returns>成功返回True，失败返回False</returns>
 		[DllImport("hid.dll")]
-		public static extern Boolean HidD_GetAttributes(IntPtr hidDeviceObject, out HidAttributes attributes);
+		public static extern bool HidD_GetAttributes(IntPtr hidDeviceObject, out HidAttributes attributes);
 
 		/// <summary>
 		/// 返回HID顶级集合的预处理数据。
@@ -95,7 +87,7 @@ namespace HidApi
 		/// <param name="PreparsedData">指向包含_HIDP_PREPARSED_DATA结构中的集合预处理数据的例程分配缓冲区的地址。</param>
 		/// <returns>成功返回True，失败返回False</returns>
 		[DllImport("hid.dll")]
-		public static extern Boolean HidD_GetPreparsedData(IntPtr HidDeviceObject, out IntPtr PreparsedData);
+		public static extern bool HidD_GetPreparsedData(IntPtr HidDeviceObject, out IntPtr PreparsedData);
 
 		/// <summary>
 		/// 释放资源
@@ -103,7 +95,7 @@ namespace HidApi
 		/// <param name="PreparsedData"></param>
 		/// <returns></returns>
 		[DllImport("hid.dll")]
-		public static extern Boolean HidD_FreePreparsedData(IntPtr PreparsedData);
+		public static extern bool HidD_FreePreparsedData(IntPtr PreparsedData);
 
 		/// <summary>
 		/// 设置HID接收缓冲区大小
@@ -112,7 +104,7 @@ namespace HidApi
 		/// <param name="NumberBuffers">缓冲区大小参数（65*N）</param>
 		/// <returns></returns>
 		[DllImport("hid.dll")]
-		public static extern Boolean HidD_SetNumInputBuffers(IntPtr HidDeviceObject, int NumberBuffers);
+		public static extern bool HidD_SetNumInputBuffers(IntPtr HidDeviceObject, int NumberBuffers);
 
 		[DllImport("hid.dll")]
 		public static extern uint HidP_GetCaps(IntPtr PreparsedData, out HIDP_CAPS Capabilities);
