@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
@@ -8,11 +9,13 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using HidApi;
 using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
+using Color = System.Drawing.Color;
 using Point = System.Windows.Point;
 
 namespace UsbScreen
@@ -50,18 +53,29 @@ namespace UsbScreen
 			/// <summary>
 			/// 暂存待发送的数据
 			/// </summary>
-			public byte[] Buffer { get; set; }
+			public byte[] Buffer
+			{
+				get
+				{
+					return buffer;
+				}
+				set
+				{
+					buffer = value;
+					SendDataBytes();
+				}
+			}
+			private byte[] buffer = new byte[65];
 			/// <summary>
 			/// 发送数据到设备
 			/// </summary>
 			/// <param name="sendBytes">Byte[64]数组</param>
-			public void SendDataBytes(byte[] sendBytes)
+			public void SendDataBytes()
 			{
-				Buffer = sendBytes;
 				// 创建数据发送缓冲区
 				byte[] dataBytes = Enumerable.Repeat((byte)0x00, Caps.OutputLength).ToArray();
-				//dataBytes[0] = 0;                                                         // 设置 ReportID=0
-				sendBytes.CopyTo(dataBytes, 1);                                             // 准备待发送数据
+				//dataBytes[0] = 0;                                                           // 设置 ReportID=0
+				buffer.CopyTo(dataBytes, 1);												// 准备待发送数据
 				try
 				{
 					Channel.Write(dataBytes, 0, Caps.OutputLength);                         // 发送数据到设备
@@ -79,7 +93,7 @@ namespace UsbScreen
 		/// <summary>
 		/// 数据发送缓冲队列
 		/// </summary>
-		public static Queue<byte[]> SendBufferQueue = new Queue<byte[]>();
+		public static ConcurrentQueue<byte[]> SendBufferQueue = new ConcurrentQueue<byte[]>();
 		///// <summary>
 		///// 设备数据读写通道
 		///// </summary>
@@ -159,28 +173,29 @@ namespace UsbScreen
 			// 刷新图像
 			Refresh.Click += delegate
 			{
-				RenderTargetBitmap bmp = new RenderTargetBitmap(240, 240, 96, 96, System.Windows.Media.PixelFormats.Pbgra32);
-				bmp.Render(Preview);
-				MemoryStream stream = new MemoryStream();
-				BitmapEncoder encoder = new BmpBitmapEncoder();
-				encoder.Frames.Add(BitmapFrame.Create(bmp));
-				encoder.Save(stream);
-
 				List<byte> ColorList = new List<byte>();
-				using (Bitmap img = new Bitmap(stream))
+
+				RenderTargetBitmap bmp = new RenderTargetBitmap(240, 240, 96, 96, PixelFormats.Pbgra32);
+				bmp.Render(Preview);
+				using (var outStream = new MemoryStream())
 				{
-					for (int h = 0; h < 240; ++h)
+					BitmapEncoder encoder = new BmpBitmapEncoder();
+					encoder.Frames.Add(BitmapFrame.Create(bmp));
+					encoder.Save(outStream);
+					using (Bitmap img = new Bitmap(outStream))
 					{
-						for (int v = 0; v < 240; ++v)
+						for (int h = 0; h < 240; ++h)
 						{
-							Color color = img.GetPixel(v, h);
-							var rgb565 = color.R / 8 * 2048 + color.G / 4 * 32 + color.B / 8;
-							ColorList.Add((byte)(rgb565 >> 8));
-							ColorList.Add((byte)(rgb565 & 0xFF));
+							for (int v = 0; v < 240; ++v)
+							{
+								Color color = img.GetPixel(v, h);
+								var rgb565 = color.R / 8 * 2048 + color.G / 4 * 32 + color.B / 8;
+								ColorList.Add((byte)(rgb565 >> 8));
+								ColorList.Add((byte)(rgb565 & 0xFF));
+							}
 						}
 					}
 				}
-				stream.Dispose();
 
 				byte spicmd = sspi.IsChecked.Value ? 0xFB : 0xFA;
 				List<byte[]> ImageArr = new List<byte[]>();
@@ -207,7 +222,7 @@ namespace UsbScreen
 				//{
 				//	Debug.WriteLine(string.Join(" ", b.Select(i => $"{i:X2}")));
 				//});
-				SendBufferQueue.Clear();
+				SendBufferQueue = new ConcurrentQueue<byte[]>();
 				SendBufferQueue.Enqueue(new byte[] { 0xB1, 0x00 });// 进入Bootloader模式命令
 				Transceiver(new byte[] { 0xB0 });// 启动数据收发器
 			};
@@ -367,7 +382,7 @@ namespace UsbScreen
 				{
 					DebugPrint($"DeviceReadAsync操作出错:{e.Message}");
 					dev.Channel.Close();                                                // 关闭设备读写通道
-					HidDevice = HidDevice.SkipWhile(d => d.Path == dev.Path).ToList();	// 移除已断开的设备
+					HidDevice.Remove(dev);                                              // 移除已断开的设备
 					OnDeviceRemoved(dev);                                               // 通知设备已断开
 				}
 			}, inputBuffer);
@@ -392,13 +407,13 @@ namespace UsbScreen
 				DebugPrint($"<数据传输开始> 需要发送 {SendBufferQueue.Count} 个数据包");// 数据传输耗时统计
 				watch.Restart();
 				// 开始发送数据
-				foreach(USBDevice dev in HidDevice)
+				HidDevice.ForEach(dev =>
 				{
-					if (SendBufferQueue.Count > 0)
+					if (SendBufferQueue.TryDequeue(out byte[] result))
 					{
-						dev.SendDataBytes(SendBufferQueue.Dequeue());
+						dev.Buffer = result;
 					}
-				}
+				});
 				return;
 			}
 			// 数据长度错误
@@ -410,24 +425,21 @@ namespace UsbScreen
 			if (ResultCommand(readBytes) == false)
 			{
 				DebugPrint(string.Join(" ", readBytes.Select(d => $"{d:X2}")));     // 打印收到的数据,调试使用
-				SendBufferQueue.Clear();
+				//SendBufferQueue.Clear();
 				this.Dispatcher.Invoke((Action)delegate { progress.Value = 0; });   // 清空进度条
 				watch.Stop();
-				DebugPrint($"<数据传输结束> 本次发送 {progress.Value} 个数据包,耗时 {watch.Elapsed}");
+				DebugPrint($"<数据传输结束> 成功发送 {progress.Value} 个数据包,耗时 {watch.Elapsed}");
 				return;
 			}
 			// 处理收到的数据
-			foreach (USBDevice dev in HidDevice)
+			HidDevice.ForEach(dev =>
 			{
-				if (dev.Buffer == null) return;
-				if ((dev.Buffer[0] == readBytes[0]) && (dev.Buffer[2] == readBytes[2]) && (dev.Buffer[3] == readBytes[3]))
+				byte[] lastBytes = dev.Buffer;
+				if ((lastBytes != null) && (lastBytes[0] == readBytes[0]) && (lastBytes[2] == readBytes[2]) && (lastBytes[3] == readBytes[3]))
 				{
-					lock (SendBufferQueue)
+					if (SendBufferQueue.TryDequeue(out byte[] result))
 					{
-						if (SendBufferQueue.Count > 0)
-						{
-							dev.SendDataBytes(SendBufferQueue.Dequeue());
-						}
+						dev.Buffer = result;
 					}
 					this.Dispatcher.Invoke((Action)delegate
 					{
@@ -435,17 +447,17 @@ namespace UsbScreen
 						if (progress.Value == progress.Maximum)
 						{
 							watch.Stop();
-							DebugPrint($"<数据传输结束> 本次发送 {progress.Value} 个数据包,耗时 {watch.Elapsed}");
+							DebugPrint($"<数据传输结束> 成功发送 {progress.Value} 个数据包,耗时 {watch.Elapsed}");
 							progress.Visibility = Visibility.Collapsed;
 						}
 					});
 				}
-			}
+			});
 		}
 		/// <summary>
 		/// Stopwatch计时器
 		/// </summary>
-		Stopwatch watch = new Stopwatch();
+		private static readonly Stopwatch watch = new Stopwatch();
 		/// <summary>
 		/// 命令操作结果判断
 		/// </summary>

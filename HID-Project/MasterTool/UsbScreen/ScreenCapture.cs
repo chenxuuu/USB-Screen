@@ -19,17 +19,21 @@ namespace UsbScreen
 		public static BitmapSource ScreenSnapshot()
 		{
 			BitmapSource shotBmp;
-			using var bmp = new Bitmap((int)SystemParameters.PrimaryScreenWidth, (int)SystemParameters.PrimaryScreenHeight);
-			using var g = Graphics.FromImage(bmp);
-			g.CopyFromScreen(0, 0, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
-			IntPtr hBitmap = bmp.GetHbitmap();
-			try
+			using (var bmp = new Bitmap((int)SystemParameters.PrimaryScreenWidth, (int)SystemParameters.PrimaryScreenHeight))
 			{
-				shotBmp = Imaging.CreateBitmapSourceFromHBitmap(hBitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
-			}
-			finally
-			{
-				DeleteObject(hBitmap);
+				using (var g = Graphics.FromImage(bmp))
+				{
+					g.CopyFromScreen(0, 0, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
+					IntPtr hBitmap = bmp.GetHbitmap();
+					try
+					{
+						shotBmp = Imaging.CreateBitmapSourceFromHBitmap(hBitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+					}
+					finally
+					{
+						DeleteObject(hBitmap);
+					}
+				}
 			}
 			return shotBmp;
 		}
