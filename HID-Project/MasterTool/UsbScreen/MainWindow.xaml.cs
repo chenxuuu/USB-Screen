@@ -198,7 +198,7 @@ namespace UsbScreen
 					}
 				}
 
-				byte spicmd = sspi.IsChecked.Value ? 0xFB : 0xFA;
+				byte spicmd = (byte)(sspi.IsChecked.Value ? 0xFB : 0xFA);
 				List<byte[]> ImageArr = new List<byte[]>();
 				for (int i = 0; i < ColorList.Count; i += 60)
 				{
