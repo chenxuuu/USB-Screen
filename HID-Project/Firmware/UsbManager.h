@@ -309,12 +309,14 @@ void HID_DeviceInterrupt(void) interrupt INT_NO_USB
 				UEP3_CTRL = UEP3_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_ACK;			// 有数据时上传数据并应答ACK
 				break;
 			case UIS_TOKEN_OUT | 4:													// 端点4 下传
-				//if(bUIS_TOG_OK == false) break;									// 检查同步标志,抛弃不同步的数据
-				RunCommand(Ep4Buffer);												// 处理数据
-				memcpy(Ep4Buffer+0x40, Ep4Buffer, 64);								// 回传操作结果
-				UEP4_T_LEN = 0x40;
-				UEP4_CTRL ^= bUEP_R_TOG; 											// 成功接收数据，翻转同步标志
-				UEP4_CTRL = UEP4_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_ACK;			// 有数据时上传数据并应答ACK
+				if(bUIS_TOG_OK) 													// 检查同步标志,抛弃不同步的数据
+				{
+					RunCommand(Ep4Buffer);											// 处理数据
+					memcpy(Ep4Buffer+0x40, Ep4Buffer, 64);							// 回传操作结果
+					UEP4_T_LEN = 0x40;
+					UEP4_CTRL ^= bUEP_R_TOG; 										// 成功接收数据，翻转同步标志
+					UEP4_CTRL = UEP4_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_ACK;		// 有数据时上传数据并应答ACK
+				}
 				break;
 			case UIS_TOKEN_SETUP | 0:												// SETUP事务,用于USB设备初始化
 			{
