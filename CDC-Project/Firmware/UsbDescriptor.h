@@ -1,22 +1,6 @@
 #ifndef __USBDESCRIPTOR_H__
 #define __USBDESCRIPTOR_H__
 
-#ifndef UINT8
-#define UINT8 unsigned char
-#endif
-#ifndef UINT8C
-#define UINT8C code unsigned char
-#endif
-#ifndef PUINT8
-#define PUINT8 unsigned char *
-#endif
-#ifndef PUINT8C
-#define PUINT8C code unsigned char *
-#endif
-#ifndef UINT16
-#define UINT16 unsigned short
-#endif
-
 // 供应商和产品信息
 #define VendorId	0x1A86				// 供应商标识(VID)
 #define ProductId	0x5722				// 产品标识(PID)
@@ -137,32 +121,35 @@ extern UINT8C CfgReport[] =
 
 /*以下内容为字符串描述符，用于描述设备接口的用途*/
 // 语言类型 (0x0409: U.S. English)
-extern UINT8C StrLangID[] = { 0x04, 0x03, 0x04, 0x09 };
-// 制造商 (注:这里只能使用WCH提供的例程制造商字符串,否则上位机不会获取产品型号;暂时不知道原因2020年10月10日)
-UINT8C StrVendor[] = { 0x0A, 0x03, 0x51, 0x69, 0xCF, 0x82, 0x81, 0x6C, 0x52, 0x60 };
-//extern code struct { UINT8 bLength; UINT8 bDscType; union { UINT8 b;UINT16 w; }string[7]; } StrVendor = {
-//sizeof(StrVendor),0x03,{'A','n','t','e','c','e','r'}};
+code struct { UINT8 bLength; UINT8 bDscType; UINT16 string[1]; } StrLangID = {
+sizeof(StrLangID),0x03,0x0904};
+// 制造商
+code struct { UINT8 bLength; UINT8 bDscType; union{UINT8 b;UINT8 w[2];} string[7]; } StrVendor = {
+sizeof(StrVendor),0x03,
+{'A','n','t','e','c','e','r'}};
 // 产品型号
-extern code struct { UINT8 bLength; UINT8 bDscType; union { UINT8 b;UINT16 w; }string[9]; } StrProduct = {
-sizeof(StrProduct),0x03,{'U','s','b','S','c','r','e','e','n'}};
+code struct { UINT8 bLength; UINT8 bDscType; union{UINT8 b;UINT8 w[2];} string[9]; }  StrProduct = {
+sizeof(StrProduct),0x03,
+{'U','s','b','S','c','r','e','e','n'}};
 // 产品序列号
-extern code struct { UINT8 bLength; UINT8 bDscType; union { UINT8 b;UINT16 w; }string[10]; } StrSerialNum = {
+code struct { UINT8 bLength; UINT8 bDscType; union{UINT8 b;UINT8 w[2];} string[10]; } StrSerialNum = {
 sizeof(StrSerialNum),0x03,
 {'2','0','2','0','-','1','0','-','1','0'}};
 // 设备名称
-extern code struct { UINT8 bLength; UINT8 bDscType; union { UINT8 b;UINT16 w; }string[10]; } StrDevice = {
-sizeof(StrDevice),0x03,{'I','P','S','2','4','0','x','2','4','0'}};
+code struct { UINT8 bLength; UINT8 bDscType; union{UINT8 b;UINT8 w[2];} string[10]; } StrDevice = {
+sizeof(StrDevice),0x03,
+{'I','P','S','2','4','0','x','2','4','0'}};
 // 将所有字符串描述符纳入一个指针数组
-extern PUINT8C StrReports[] = {
-	(PUINT8C)(&StrLangID),
-	(PUINT8C)(&StrVendor),
-	(PUINT8C)(&StrProduct),
-	(PUINT8C)(&StrSerialNum),
-	(PUINT8C)(&StrDevice)
+PUINT8C StrReports[]={	
+	(PUINT8C)&StrLangID,
+	(PUINT8C)&StrVendor,
+	(PUINT8C)&StrProduct,
+	(PUINT8C)&StrSerialNum,
+	(PUINT8C)&StrDevice
 };
 
 // CDC初始配置参数
-extern UINT8C LineCoding[7] = {
+UINT8C LineCoding[7] = {
 	0x00,0xE1,0x00,0x00,	// 波特率: 57600 (数据低位在前0x0000E100)
 	0x00,					// 停止位: 1 (可选 {1,1.5,2})
 	0x00,					// 校验位: 无 (可选 {无,奇,偶,标志,空格})
@@ -187,13 +174,13 @@ xdata struct UsbBuffer{
 #define Ep4Buffer Buffer.EP4
 
 #define UsbSetupBuf	((PUSB_SETUP_REQ)Ep0Buffer)	// 定义Setup包结构体
-#define USBbReqType	UsbSetupBuf->bRequestType
-#define USBbRequest	UsbSetupBuf->bRequest
-#define USBwValueL	UsbSetupBuf->wValueL
-#define USBwValueH	UsbSetupBuf->wValueH
-#define USBwIndexL	UsbSetupBuf->wIndexL
-#define USBwIndexH	UsbSetupBuf->wIndexH
-#define USBwLengthL	UsbSetupBuf->wLengthL
-#define USBwLengthH	UsbSetupBuf->wLengthH
+#define USBbReqType	(UsbSetupBuf->bRequestType)
+#define USBbRequest	(UsbSetupBuf->bRequest)
+#define USBwValueL	(UsbSetupBuf->wValueL)
+#define USBwValueH	(UsbSetupBuf->wValueH)
+#define USBwIndexL	(UsbSetupBuf->wIndexL)
+#define USBwIndexH	(UsbSetupBuf->wIndexH)
+#define USBwLengthL	(UsbSetupBuf->wLengthL)
+#define USBwLengthH	(UsbSetupBuf->wLengthH)
 
 #endif

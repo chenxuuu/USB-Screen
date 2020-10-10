@@ -59,9 +59,9 @@ void HID_DeviceInterrupt(void) interrupt INT_NO_USB
 {
 	static UINT8	UsbConfig;		// USB配置模式位
 
-	static PUINT8	pDescr;			// 缓存USB待发送数据指针
+	static PUINT8C	pDescr;			// 缓存USB待发送数据指针
 	static UINT16	SetupSize;		// 缓存USB下一阶段需要上传的数据长度
-	static UINT8	SetupRequest;	// 缓存USB描述符的请求类型
+	static UINT8	SetupReq;		// 缓存USB描述符的请求类型
 	static UINT8	length;			// 缓存USB待发送数据长度
 
 	if (UIF_TRANSFER)															// USB传输完成中断标志
@@ -132,10 +132,10 @@ void HID_DeviceInterrupt(void) interrupt INT_NO_USB
 			{
 				length = 0;														// 默认为成功并且上传0长度
 				SetupSize = ((UINT16)USBwLengthH << 8) | USBwLengthL;			// 获取Setup包长度
-				SetupRequest = USBbRequest;										// 获取bRequest
+				SetupReq = USBbRequest;										// 获取bRequest
 				if ((USBbReqType & USB_REQ_TYP_MASK) != USB_REQ_TYP_STANDARD) 	// 非标准请求
 				{
-					switch (SetupRequest)
+					switch (SetupReq)
 					{
 						case SET_LINE_CODING:	// 0x20	设置CDC参数
 							break;
@@ -159,7 +159,7 @@ void HID_DeviceInterrupt(void) interrupt INT_NO_USB
 				}
 				else
 				{																// 标准请求包处理
-					switch (SetupRequest)										// 识别请求码
+					switch (SetupReq)										// 识别请求码
 					{
 						case USB_GET_DESCRIPTOR:									// 主机获取设备描述符
 						{
@@ -174,7 +174,7 @@ void HID_DeviceInterrupt(void) interrupt INT_NO_USB
 								length = pDescr[2];									// 获取数据长度(描述符第一位就是数据长度)
 								break;
 							case 3:													// 字符串描述符
-								pDescr = StrReports[USBwValueL < sizeof(StrReports) ? USBwValueL : 3];// 获取数据指针
+								pDescr = StrReports[(USBwValueL < sizeof(StrReports) ? USBwValueL : 0)];// 获取数据指针
 								length = *pDescr;                           		// 获取数据长度(描述符第一位就是数据长度)
 								break;
 							default:												// 不支持的描述符
@@ -216,36 +216,37 @@ void HID_DeviceInterrupt(void) interrupt INT_NO_USB
 									{
 										/* 唤醒设备 */
 									}
-								}
+									else length = 0xFF;
+								}else length = 0xFF;
 							}
 							else if ((USBbReqType & USB_REQ_RECIP_MASK) == USB_REQ_RECIP_ENDP)
 							{
 								switch (USBwIndexL)
 								{
-								case 0x81:
-									UEP1_CTRL = UEP1_CTRL & ~(bUEP_T_TOG | MASK_UEP_T_RES) | UEP_T_RES_NAK;
-									break;
-								case 0x82:
-									UEP2_CTRL = UEP2_CTRL & ~(bUEP_T_TOG | MASK_UEP_T_RES) | UEP_T_RES_NAK;
-									break;
-									//									  case 0x83:
-									//										   UEP3_CTRL = UEP3_CTRL & ~ ( bUEP_T_TOG | MASK_UEP_T_RES ) | UEP_T_RES_NAK;
-									//										   break;
-									//									  case 0x84:
-									//										   UEP4_CTRL = UEP4_CTRL & ~ ( bUEP_T_TOG | MASK_UEP_T_RES ) | UEP_T_RES_NAK;
-									//										   break;
-								case 0x01:
-									UEP1_CTRL = UEP1_CTRL & ~(bUEP_R_TOG | MASK_UEP_T_RES) | UEP_R_RES_ACK;
-									break;
-								case 0x02:
-									UEP2_CTRL = UEP2_CTRL & ~(bUEP_R_TOG | MASK_UEP_T_RES) | UEP_R_RES_ACK;
-									break;
-									//									  case 0x03:
-									//										   UEP3_CTRL = UEP3_CTRL & ~ ( bUEP_R_TOG | MASK_UEP_T_RES ) | UEP_R_RES_ACK;
-									//										   break;
-									//									  case 0x04:
-									//										   UEP4_CTRL = UEP4_CTRL & ~ ( bUEP_R_TOG | MASK_UEP_R_RES ) | UEP_R_RES_ACK;
-									//										   break;
+									case 0x81:
+										UEP1_CTRL = UEP1_CTRL & ~(bUEP_T_TOG | MASK_UEP_T_RES) | UEP_T_RES_NAK;
+										break;
+									case 0x82:
+										UEP2_CTRL = UEP2_CTRL & ~(bUEP_T_TOG | MASK_UEP_T_RES) | UEP_T_RES_NAK;
+										break;
+//									case 0x83:
+//										UEP3_CTRL = UEP3_CTRL & ~ ( bUEP_T_TOG | MASK_UEP_T_RES ) | UEP_T_RES_NAK;
+//										break;
+//									case 0x84:
+//										UEP4_CTRL = UEP4_CTRL & ~ ( bUEP_T_TOG | MASK_UEP_T_RES ) | UEP_T_RES_NAK;
+//										break;
+//									case 0x01:
+//										UEP1_CTRL = UEP1_CTRL & ~(bUEP_R_TOG | MASK_UEP_T_RES) | UEP_R_RES_ACK;
+//										break;
+									case 0x02:
+										UEP2_CTRL = UEP2_CTRL & ~(bUEP_R_TOG | MASK_UEP_T_RES) | UEP_R_RES_ACK;
+										break;
+//									case 0x03:
+//										UEP3_CTRL = UEP3_CTRL & ~ ( bUEP_R_TOG | MASK_UEP_T_RES ) | UEP_R_RES_ACK;
+//										break;
+//									case 0x04:
+//										UEP4_CTRL = UEP4_CTRL & ~ ( bUEP_R_TOG | MASK_UEP_R_RES ) | UEP_R_RES_ACK;
+//										break;
 								default:
 									length = 0xFF;// 操作失败
 									break;
@@ -278,33 +279,33 @@ void HID_DeviceInterrupt(void) interrupt INT_NO_USB
 								{
 									switch (USBwIndexL)
 									{
-									case 0x81:
-										UEP1_CTRL = UEP1_CTRL & (~bUEP_T_TOG) | UEP_T_RES_STALL;// 设置端点1 IN STALL
-										break;
-									case 0x82:
-										UEP2_CTRL = UEP2_CTRL & (~bUEP_T_TOG) | UEP_T_RES_STALL;// 设置端点1 IN STALL
-										break;
-										//											case 0x83:
-										//												UEP3_CTRL = UEP3_CTRL & (~bUEP_T_TOG) | UEP_T_RES_STALL;// 设置端点1 IN STALL
-										//												break;
-										//											case 0x84:
-										//												UEP4_CTRL = UEP4_CTRL & (~bUEP_T_TOG) | UEP_T_RES_STALL;// 设置端点2 IN STALL
-										//												break;
-									case 0x01:
-										UEP1_CTRL = UEP1_CTRL & (~bUEP_T_TOG) | UEP_R_RES_STALL;// 设置端点1 OUT STALL
-										break;
-									case 0x02:
-										UEP2_CTRL = UEP2_CTRL & (~bUEP_T_TOG) | UEP_R_RES_STALL;// 设置端点1 OUT STALL
-										break;
-										//											case 0x03:
-										//												UEP3_CTRL = UEP3_CTRL & (~bUEP_T_TOG) | UEP_R_RES_STALL;// 设置端点1 OUT STALL
-										//												break;
-										//											case 0x04:
-										//												UEP4_CTRL = UEP4_CTRL & (~bUEP_R_TOG) | UEP_R_RES_STALL;// 设置端点2 OUT STALL
-										//												break;
-									default:
-										length = 0xFF;// 操作失败
-										break;
+										case 0x81:
+											UEP1_CTRL = UEP1_CTRL & (~bUEP_T_TOG) | UEP_T_RES_STALL;// 设置端点1 IN STALL
+											break;
+										case 0x82:
+											UEP2_CTRL = UEP2_CTRL & (~bUEP_T_TOG) | UEP_T_RES_STALL;// 设置端点1 IN STALL
+											break;
+//										case 0x83:
+//											UEP3_CTRL = UEP3_CTRL & (~bUEP_T_TOG) | UEP_T_RES_STALL;// 设置端点1 IN STALL
+//											break;
+//										case 0x84:
+//											UEP4_CTRL = UEP4_CTRL & (~bUEP_T_TOG) | UEP_T_RES_STALL;// 设置端点2 IN STALL
+//											break;
+//										case 0x01:
+//											UEP1_CTRL = UEP1_CTRL & (~bUEP_T_TOG) | UEP_R_RES_STALL;// 设置端点1 OUT STALL
+//											break;
+										case 0x02:
+											UEP2_CTRL = UEP2_CTRL & (~bUEP_T_TOG) | UEP_R_RES_STALL;// 设置端点1 OUT STALL
+											break;
+//										case 0x03:
+//											UEP3_CTRL = UEP3_CTRL & (~bUEP_T_TOG) | UEP_R_RES_STALL;// 设置端点1 OUT STALL
+//											break;
+//										case 0x04:
+//											UEP4_CTRL = UEP4_CTRL & (~bUEP_R_TOG) | UEP_R_RES_STALL;// 设置端点2 OUT STALL
+//											break;
+										default:
+											length = 0xFF;// 操作失败
+											break;
 									}
 								}
 								else length = 0xFF;// 操作失败
@@ -328,7 +329,7 @@ void HID_DeviceInterrupt(void) interrupt INT_NO_USB
 			else length = 0xFF;//SETUP包长度错误
 			if (length == 0xFF)
 			{
-				SetupRequest = 0xFF;
+				SetupReq = 0xFF;
 				UEP0_CTRL = bUEP_R_TOG | bUEP_T_TOG | UEP_R_RES_STALL | UEP_T_RES_STALL;//STALL
 			}
 			else if (length <= EP0SIZE)	// 上传数据长度在端点0缓存区尺寸内,可以发送
@@ -344,7 +345,7 @@ void HID_DeviceInterrupt(void) interrupt INT_NO_USB
 			break;
 		}
 		case UIS_TOKEN_IN | 0:													// 端点0 上传
-			switch (SetupRequest)												// 分析描述符类型
+			switch (SetupReq)												// 分析描述符类型
 			{
 				case USB_GET_DESCRIPTOR:										// 主机获取描述符
 					length = SetupSize < EP0SIZE ? SetupSize : EP0SIZE;			// 若数据长度超过缓冲区尺寸,则需要截断分多次发送
@@ -365,11 +366,12 @@ void HID_DeviceInterrupt(void) interrupt INT_NO_USB
 			}
 			break;
 		case UIS_TOKEN_OUT | 0:													// 端点0 下传
-			if (SetupRequest == SET_LINE_CODING)								// 设置串口属性
+			if (SetupReq == SET_LINE_CODING)								// 设置串口属性
 			{
 				if (U_TOG_OK)
 				{
-					memcpy(LineCoding, Ep0Buffer, sizeof(LineCoding));
+					//memcpy(LineCoding, Ep0Buffer, sizeof(LineCoding));
+					UEP0_CTRL ^= bUEP_R_TOG;
 					UEP0_T_LEN = 0;
 					UEP0_CTRL |= UEP_R_RES_ACK | UEP_T_RES_ACK;
 				}
