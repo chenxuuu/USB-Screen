@@ -174,7 +174,7 @@ void HID_DeviceInterrupt(void) interrupt INT_NO_USB
 								length = pDescr[2];									// 获取数据长度(描述符第一位就是数据长度)
 								break;
 							case 3:													// 字符串描述符
-								pDescr = *(StrReports + (USBwValueL < sizeof(StrReports) ? USBwValueL : 0));// 获取数据指针
+								pDescr = StrReports[USBwValueL < sizeof(StrReports) ? USBwValueL : 3];// 获取数据指针
 								length = *pDescr;                           		// 获取数据长度(描述符第一位就是数据长度)
 								break;
 							default:												// 不支持的描述符

@@ -138,9 +138,10 @@ extern UINT8C CfgReport[] =
 /*以下内容为字符串描述符，用于描述设备接口的用途*/
 // 语言类型 (0x0409: U.S. English)
 extern UINT8C StrLangID[] = { 0x04, 0x03, 0x04, 0x09 };
-// 制造商
-extern code struct { UINT8 bLength; UINT8 bDscType; union { UINT8 b;UINT16 w; }string[7]; } StrVendor = {
-sizeof(StrVendor),0x03,{'A','n','t','e','c','e','r'}};
+// 制造商 (注:这里只能使用WCH提供的例程制造商字符串,否则上位机不会获取产品型号;暂时不知道原因2020年10月10日)
+UINT8C StrVendor[] = { 0x0A, 0x03, 0x51, 0x69, 0xCF, 0x82, 0x81, 0x6C, 0x52, 0x60 };
+//extern code struct { UINT8 bLength; UINT8 bDscType; union { UINT8 b;UINT16 w; }string[7]; } StrVendor = {
+//sizeof(StrVendor),0x03,{'A','n','t','e','c','e','r'}};
 // 产品型号
 extern code struct { UINT8 bLength; UINT8 bDscType; union { UINT8 b;UINT16 w; }string[9]; } StrProduct = {
 sizeof(StrProduct),0x03,{'U','s','b','S','c','r','e','e','n'}};

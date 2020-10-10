@@ -197,16 +197,16 @@ namespace UsbDebugTool
 			};
 			ScanUart.Click += delegate
 			{
-				//UartList.ItemsSource = SerialPort.GetPortNames();
-				//UartList.SelectedIndex = UartList.Items.Count - 1;
-
-				var DeviceArr = IOPorts.HardWare.MulGetHardwareInfo(IOPorts.HardwareEnum.Win32_SerialPort);
-				var DeviceStr = DeviceArr.Select(dev =>
-				{
-					return $"设备ID:{dev.PNPDeviceID}|VID:{dev.VendorID}|PID:{dev.ProductID}|名称:{dev.Name}|描述:{dev.Description}";
-				});
-				UartList.ItemsSource = DeviceStr;
+				UartList.ItemsSource = SerialPort.GetPortNames();
 				UartList.SelectedIndex = UartList.Items.Count - 1;
+
+				//var DeviceArr = IOPorts.HardWare.MulGetHardwareInfo(IOPorts.HardwareEnum.Win32_SerialPort);
+				//var DeviceStr = DeviceArr.Select(dev =>
+				//{
+				//	return $"设备ID:{dev.PNPDeviceID}|VID:{dev.VendorID}|PID:{dev.ProductID}|名称:{dev.Name}|描述:{dev.Description}";
+				//});
+				//UartList.ItemsSource = DeviceStr;
+				//UartList.SelectedIndex = UartList.Items.Count - 1;
 
 
 			};
@@ -268,9 +268,9 @@ namespace UsbDebugTool
 							int sendLength = SerialPortBase.BytesToWrite;
 
 							DebugPrint($"<发送数据> {string.Join(" ", SendCmd.Select(d => d.ToString("X2")))}");
-							SerialPortBase.Encoding = Encoding.ASCII;
-							//comm.Write(SendCmd, 0, sendLength);
-							SerialPortBase.BaseStream.Write(SendCmd, 0, sendLength);
+
+							//SerialPortBase.Write(SendCmd, 0, sendLength);
+							//SerialPortBase.BaseStream.Write(SendCmd, 0, sendLength);
 							SerialPortBase.BaseStream.BeginWrite(SendCmd, 0, sendLength, (result) =>
 							{
 								if (result.IsCompleted)
