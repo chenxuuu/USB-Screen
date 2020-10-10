@@ -1,6 +1,0 @@
-{
-	"files.associations": {
-		"*.bin": "armabin",
-		"DEBUG.C": "cpp"
-	}
-}

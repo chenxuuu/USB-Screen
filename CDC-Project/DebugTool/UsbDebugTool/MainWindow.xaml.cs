@@ -54,6 +54,7 @@ namespace UsbDebugTool
 			Dispatcher.BeginInvoke((Action)(() =>
 			{
 				ReadBox.AppendText($"{info}{Environment.NewLine}");
+				ReadBox.ScrollToEnd();
 			}));
 		}
 		/// <summary>
@@ -226,11 +227,7 @@ namespace UsbDebugTool
 						SerialPortBase.DataBits = 8;                // 数据位
 						SerialPortBase.StopBits = StopBits.One;     // 停止位
 						SerialPortBase.Parity = Parity.None;        // 奇偶校验
-						SerialPortBase.WriteBufferSize = 1024 * 1024 * 1;   /* 输出缓冲区的大小为 = 1MB */
-						SerialPortBase.ReadBufferSize = 1024 * 1024 * 2;    /* 输入缓冲区的大小为 = 2MB */
 
-						SerialPortBase.ReadTimeout = 5000;        // 超时ms
-						SerialPortBase.WriteTimeout = 1000;     //
 						SerialPortBase.Open();
 
 						DebugPrint($"<{SerialPortBase.PortName}> {(SerialPortBase.IsOpen ? "打开成功" : "打开失败")}");
@@ -268,17 +265,7 @@ namespace UsbDebugTool
 							int sendLength = SerialPortBase.BytesToWrite;
 
 							DebugPrint($"<发送数据> {string.Join(" ", SendCmd.Select(d => d.ToString("X2")))}");
-
-							//SerialPortBase.Write(SendCmd, 0, sendLength);
-							//SerialPortBase.BaseStream.Write(SendCmd, 0, sendLength);
-							SerialPortBase.BaseStream.BeginWrite(SendCmd, 0, sendLength, (result) =>
-							{
-								if (result.IsCompleted)
-								{
-									DebugPrint($"<数据发送成功>");
-								}
-							}, null);
-
+							SerialPortBase.Write(SendCmd,0,SendCmd.Length);
 						}
 						catch (Exception e)
 						{
