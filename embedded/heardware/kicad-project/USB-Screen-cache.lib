@@ -78,27 +78,6 @@ X ~ 2 0 -150 110 U 50 50 1 1 P
 ENDDRAW
 ENDDEF
 #
-# Device_Jumper_NO_Small
-#
-DEF Device_Jumper_NO_Small JP 0 30 N N 1 F N
-F0 "JP" 0 80 50 H V C CNN
-F1 "Device_Jumper_NO_Small" 10 -60 50 H V C CNN
-F2 "" 0 0 50 H I C CNN
-F3 "" 0 0 50 H I C CNN
-$FPLIST
- SolderJumper*Open*
- Jumper*
- TestPoint*2Pads*
- TestPoint*Bridge*
-$ENDFPLIST
-DRAW
-C -40 0 20 0 1 0 N
-C 40 0 20 0 1 0 N
-X 1 1 -100 0 40 R 50 50 0 1 P
-X 2 2 100 0 40 L 50 50 0 1 P
-ENDDRAW
-ENDDEF
-#
 # Device_LED
 #
 DEF Device_LED D 0 40 N N 1 F N
@@ -112,9 +91,9 @@ $FPLIST
  LED_THT:*
 $ENDFPLIST
 DRAW
-P 2 0 1 10 -50 -50 -50 50 N
+P 2 0 1 8 -50 -50 -50 50 N
 P 2 0 1 0 -50 0 50 0 N
-P 4 0 1 10 50 -50 50 50 -50 0 50 -50 N
+P 4 0 1 8 50 -50 50 50 -50 0 50 -50 N
 P 5 0 1 0 -120 -30 -180 -90 -150 -90 -180 -90 -180 -60 N
 P 5 0 1 0 -70 -30 -130 -90 -100 -90 -130 -90 -130 -60 N
 X K 1 -150 0 100 R 50 50 1 1 P
@@ -139,14 +118,13 @@ X ~ 2 0 -150 50 U 50 50 1 1 P
 ENDDRAW
 ENDDEF
 #
-# Transistor_BJT_2SC4213
+# USB-Screen-rescue_2SC4213-Transistor_BJT
 #
-DEF Transistor_BJT_2SC4213 Q 0 0 Y N 1 F N
+DEF USB-Screen-rescue_2SC4213-Transistor_BJT Q 0 0 Y N 1 F N
 F0 "Q" 200 75 50 H V L CNN
-F1 "Transistor_BJT_2SC4213" 200 0 50 H V L CNN
+F1 "USB-Screen-rescue_2SC4213-Transistor_BJT" 200 0 50 H V L CNN
 F2 "Package_TO_SOT_SMD:SOT-323_SC-70" 200 -75 50 H I L CIN
 F3 "" 0 0 50 H I L CNN
-ALIAS BC818W BC847W BC848W BC849W BC850W 2SC4213
 $FPLIST
  SOT?323*
 $ENDFPLIST

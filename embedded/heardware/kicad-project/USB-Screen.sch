@@ -1,4 +1,5 @@
 EESchema Schematic File Version 4
+LIBS:USB-Screen-cache
 EELAYER 30 0
 EELAYER END
 $Descr A4 11693 8268
@@ -380,47 +381,6 @@ Wire Wire Line
 Text Label 8200 3600 2    50   ~ 0
 PWM
 $Comp
-L Device:Jumper_NO_Small JP1
-U 1 1 5F656264
-P 6850 2000
-F 0 "JP1" H 6850 2100 50  0000 C CNN
-F 1 "P3.6 download" H 6800 1950 50  0000 C CNN
-F 2 "Jumper:SolderJumper-2_P1.3mm_Open_Pad1.0x1.5mm" H 6850 2000 50  0001 C CNN
-F 3 "~" H 6850 2000 50  0001 C CNN
-	1    6850 2000
-	1    0    0    -1  
-$EndComp
-Wire Wire Line
-	6500 2000 6750 2000
-Wire Wire Line
-	6950 2000 7100 2000
-Text Label 6500 2000 0    50   ~ 0
-USB_D+
-$Comp
-L Device:R R1
-U 1 1 5F662FAB
-P 7250 2000
-F 0 "R1" V 7350 2000 50  0000 C CNN
-F 1 "10K" V 7250 2000 50  0000 C CNN
-F 2 "Resistor_SMD:R_0402_1005Metric" V 7180 2000 50  0001 C CNN
-F 3 "~" H 7250 2000 50  0001 C CNN
-	1    7250 2000
-	0    -1   -1   0   
-$EndComp
-$Comp
-L power:+5V #PWR08
-U 1 1 5F663B6A
-P 7600 2000
-F 0 "#PWR08" H 7600 1850 50  0001 C CNN
-F 1 "+5V" V 7615 2128 50  0000 L CNN
-F 2 "" H 7600 2000 50  0001 C CNN
-F 3 "" H 7600 2000 50  0001 C CNN
-	1    7600 2000
-	0    1    1    0   
-$EndComp
-Wire Wire Line
-	7400 2000 7600 2000
-$Comp
 L Device:R R2
 U 1 1 5F66A17C
 P 4450 3900
@@ -647,7 +607,7 @@ F 3 "" H 4800 3900 50  0001 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L Transistor_BJT:2SC4213 Q1
+L USB-Screen-rescue:2SC4213-Transistor_BJT Q1
 U 1 1 5F727A10
 P 4500 4600
 F 0 "Q1" H 4691 4554 50  0000 L CNN
@@ -695,4 +655,56 @@ Wire Wire Line
 	3450 4250 3850 4250
 Wire Wire Line
 	4150 4250 4400 4250
+$Comp
+L Device:R R1
+U 1 1 5F81BAD2
+P 2750 3100
+F 0 "R1" H 2680 3054 50  0000 R CNN
+F 1 "10K" H 2680 3145 50  0000 R CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 2680 3100 50  0001 C CNN
+F 3 "~" H 2750 3100 50  0001 C CNN
+	1    2750 3100
+	-1   0    0    1   
+$EndComp
+$Comp
+L Device:R R7
+U 1 1 5F81D793
+P 3000 3100
+F 0 "R7" H 3070 3146 50  0000 L CNN
+F 1 "10K" H 3070 3055 50  0000 L CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 2930 3100 50  0001 C CNN
+F 3 "~" H 3000 3100 50  0001 C CNN
+	1    3000 3100
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+3.3V #PWR0115
+U 1 1 5F8207AA
+P 2750 2950
+F 0 "#PWR0115" H 2750 2800 50  0001 C CNN
+F 1 "+3.3V" H 2765 3123 50  0000 C CNN
+F 2 "" H 2750 2950 50  0001 C CNN
+F 3 "" H 2750 2950 50  0001 C CNN
+	1    2750 2950
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+3.3V #PWR0116
+U 1 1 5F820FDB
+P 3000 2950
+F 0 "#PWR0116" H 3000 2800 50  0001 C CNN
+F 1 "+3.3V" H 3015 3123 50  0000 C CNN
+F 2 "" H 3000 2950 50  0001 C CNN
+F 3 "" H 3000 2950 50  0001 C CNN
+	1    3000 2950
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	2750 3250 2750 3500
+Wire Wire Line
+	3000 3250 3000 3500
+Text Label 2750 3500 1    50   ~ 0
+SCL
+Text Label 3000 3500 1    50   ~ 0
+SDA
 $EndSCHEMATC
