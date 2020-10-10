@@ -18,6 +18,7 @@
 *******************************************************************************/
 void LCD_Init(void)
 {
+	SPI_Init();			// 初始化硬件SPI总线
 	LCD_BLK = 1;		// 打开背光
 	SPI_CS = 0;			// LCD片选使能（允许操作屏幕）
 	mDelaymS(20);		// 等待
@@ -27,7 +28,7 @@ void LCD_Init(void)
 	mDelaymS(20);		// 等待
 	SPI_CS = 1;
 	SPI_CS = 0;
-	//SPI_MasterModeSet();// 启用硬件SPI (使用硬件SPI初始化屏幕); 使用软SPI初始化能看到效果(硬SPI太快,看不到)
+	//SPI_Mode(0x60);// 启用硬件SPI (使用硬件SPI初始化屏幕); 使用软SPI初始化能看到效果(硬SPI太快,看不到)
 	SPI_Send_CMD(0x11);
 	SPI_Send_CMD(0x36);
 	SPI_Send_DAT(0x00);
@@ -109,5 +110,5 @@ void LCD_Init(void)
 			}
 		}
 	}
-	//SPI0_CTRL = 0x02;	// 关闭硬件SPI
+	//SPI_Mode(0x00);	// 关闭硬件SPI
 }

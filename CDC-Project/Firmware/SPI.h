@@ -17,7 +17,8 @@ sbit SPI_SDA = P1 ^ 5;		// SPI数据(MOSI)
 extern void SPI_Send_DAT(UINT8 dat);
 extern void SPI_Send_CMD(UINT8 cmd);
 
-extern void SPI_MasterModeSet(void);
+extern void SPI_Init(void);
+extern void SPI_Mode(UINT8 mod);
 extern void SPI_SendDAT(UINT8 dat);
 extern void SPI_SendCMD(UINT8 cmd);
 

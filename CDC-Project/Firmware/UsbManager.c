@@ -77,14 +77,14 @@ void HID_DeviceInterrupt(void) interrupt INT_NO_USB
 			UEP2_CTRL = UEP2_CTRL & ~MASK_UEP_T_RES | UEP_T_RES_NAK;			// 默认应答NAK
 			break;
 		case UIS_TOKEN_OUT | 2:													// 端点2 下传
-			if (U_TOG_OK)
+//			if (U_TOG_OK)
 			{
-				if(USB_RX_LEN == 64)
+//				if(USB_RX_LEN == 64)
 				{
 					static UINT8 i;
-					SPI_CS = 1;
-					SPI_CS = 0;
-					SPI_MasterModeSet();// 模式0	
+//					//SPI_CS = 1;
+//					//SPI_CS = 0;
+					SPI0_CTRL = 0x60;
 					for(i=0,length=64; length; --length)
 					{
 						SPI0_DATA = Ep2Buffer[i];                                                           
