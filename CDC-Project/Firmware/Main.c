@@ -41,5 +41,23 @@ void main(void)
 	LCD_Init();
 	while(1)
 	{
+		if(DMA_STATUS & 0x01)
+		{
+			LCD_SET((PUINT8X)UEP3_DMA);
+			DMA_STATUS &= (~0x01);
+			if((UDEV_CTRL&bUD_GP_BIT) == 0) 
+			{
+				UEP3_CTRL = UEP3_CTRL & ~MASK_UEP_R_RES | UEP_R_RES_ACK;
+			}
+		}
+		else if(DMA_STATUS & 0x02)
+		{
+			LCD_SET((PUINT8X)(UEP3_DMA+0x40));
+			DMA_STATUS &= (~0x02);
+			if((UDEV_CTRL&bUD_GP_BIT) != 0) 
+			{
+				UEP3_CTRL = UEP3_CTRL & ~MASK_UEP_R_RES | UEP_R_RES_ACK;
+			}
+		}
 	}
 }

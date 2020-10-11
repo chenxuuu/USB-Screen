@@ -14,7 +14,7 @@
 #define REVL		LSB(ReleaseNo) 		// Release Number Low Byte (LSB)
 #define REVH		MSB(ReleaseNo) 		// Release Number High Byte (MSB)
 
-#define EP0SIZE		0x08				// 端点0数据包大小(只有8,16,32,64有效)
+#define EP0SIZE		0x40				// 端点0数据包大小(只有8,16,32,64有效)
 #define EP1SIZE		0x08				// 端点1数据包大小
 #define EP2SIZE		0x40				// 端点2数据包大小
 #define EP3SIZE		0x40				// 端点3数据包大小
@@ -112,7 +112,7 @@ extern UINT8C CfgReport[] =
 	// 端点描述符
 	0x07,		// 描述符长度．固定为0x07．
 	0x05,		// 描述符类型．固定为0x05．
-	0x02,		// 端点地址(这里为下传端点)．Bit7<1输入:0输出>，Bit6-4保留，Bit3-0端点号．
+	0x03,		// 端点地址(这里为下传端点)．Bit7<1输入:0输出>，Bit6-4保留，Bit3-0端点号．
 	0x02,		// 端点属性．Bit7-2保留，Bit1-0<0控制:1同步:2批量:3中断>.
 	EP2SIZE,	// 端点最大通信包长度(数据低位在前: 0x0040,单位Byte);
 	0x00,
@@ -121,31 +121,25 @@ extern UINT8C CfgReport[] =
 
 /*以下内容为字符串描述符，用于描述设备接口的用途*/
 // 语言类型 (0x0409: U.S. English)
-code struct { UINT8 bLength; UINT8 bDscType; UINT16 string[1]; } StrLangID = {
-sizeof(StrLangID),0x03,0x0904};
-// 制造商
-code struct { UINT8 bLength; UINT8 bDscType; union{UINT8 b;UINT8 w[2];} string[7]; } StrVendor = {
+UINT8C StrLangID[] = { 0x04, 0x03, 0x09, 0x04 };
+// 制造商 (注:因KeilC的UINT16是大端数据,所以要用联合体把UINT16字符转化成小端数据)
+code struct { UINT8 bLength; UINT8 bDscType; union{UINT8 b;UINT16 w;} string[7]; } StrVendor = {
 sizeof(StrVendor),0x03,
 {'A','n','t','e','c','e','r'}};
 // 产品型号
-code struct { UINT8 bLength; UINT8 bDscType; union{UINT8 b;UINT8 w[2];} string[9]; }  StrProduct = {
+code struct { UINT8 bLength; UINT8 bDscType; union{UINT8 b;UINT16 w;} string[9]; } StrProduct = {
 sizeof(StrProduct),0x03,
 {'U','s','b','S','c','r','e','e','n'}};
 // 产品序列号
-code struct { UINT8 bLength; UINT8 bDscType; union{UINT8 b;UINT8 w[2];} string[10]; } StrSerialNum = {
-sizeof(StrSerialNum),0x03,
-{'2','0','2','0','-','1','0','-','1','0'}};
-// 设备名称
-code struct { UINT8 bLength; UINT8 bDscType; union{UINT8 b;UINT8 w[2];} string[10]; } StrDevice = {
-sizeof(StrDevice),0x03,
-{'I','P','S','2','4','0','x','2','4','0'}};
+code struct { UINT8 bLength; UINT8 bDscType; union{UINT8 b;UINT16 w;} string[17]; } StrSerial = {
+sizeof(StrSerial),0x03,
+{'S','T','1','E','6','D','I','P','S','F','0','F','0','S','P','I','3'}};
 // 将所有字符串描述符纳入一个指针数组
 PUINT8C StrReports[]={	
 	(PUINT8C)&StrLangID,
 	(PUINT8C)&StrVendor,
 	(PUINT8C)&StrProduct,
-	(PUINT8C)&StrSerialNum,
-	(PUINT8C)&StrDevice
+	(PUINT8C)&StrSerial
 };
 
 // CDC初始配置参数
@@ -157,30 +151,7 @@ UINT8C LineCoding[7] = {
 };
 #define SET_LINE_CODING		0X20	// 主机写CDC配置命令
 #define GET_LINE_CODING		0X21	// 主机读CDC配置命令
-#define SET_LINE_STATE		0X22	// 该请求生成 RS-232/V.24 样式的控制信号
+#define SET_LINE_STATE		0X22	// 主机写CDC状态
 
-// USB数据缓冲区配置
-xdata struct UsbBuffer{
-	UINT8 EP0[0x40];	// 端点0 OUT&IN 64byte收发共用缓冲区
-//	UINT8 EP4[0x80];	// 端点4 OUT&IN 64byte*2收发缓冲区
-	UINT8 EP1[0x40];	// 端点1 OUT&IN 64byte*2收发缓冲区
-	UINT8 EP2[0x80];	// 端点2 OUT&IN 64byte*2收发缓冲区
-//	UINT8 EP3[0x80];	// 端点3 OUT&IN 64byte*2收发缓冲区
-} Buffer _at_ 0x0000;
-#define Ep0Buffer Buffer.EP0
-#define Ep1Buffer Buffer.EP1
-#define Ep2Buffer Buffer.EP2
-#define Ep3Buffer Buffer.EP3
-#define Ep4Buffer Buffer.EP4
-
-#define UsbSetupBuf	((PUSB_SETUP_REQ)Ep0Buffer)	// 定义Setup包结构体
-#define USBbReqType	(UsbSetupBuf->bRequestType)
-#define USBbRequest	(UsbSetupBuf->bRequest)
-#define USBwValueL	(UsbSetupBuf->wValueL)
-#define USBwValueH	(UsbSetupBuf->wValueH)
-#define USBwIndexL	(UsbSetupBuf->wIndexL)
-#define USBwIndexH	(UsbSetupBuf->wIndexH)
-#define USBwLengthL	(UsbSetupBuf->wLengthL)
-#define USBwLengthH	(UsbSetupBuf->wLengthH)
 
 #endif

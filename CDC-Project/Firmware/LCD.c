@@ -11,14 +11,14 @@
 #include "LCD.h"
 
 /*******************************************************************************
-* Function Name	: SPI_Init
+* Function Name	: LCD_Init
 * Description	: LCD屏幕显示初始化
 * Input			: None
 * Return		: None
 *******************************************************************************/
 void LCD_Init(void)
 {
-	SPI_Init();			// 初始化硬件SPI总线
+	SPI_INIT();			// 初始化硬件SPI总线
 	LCD_BLK = 1;		// 打开背光
 	SPI_CS = 0;			// LCD片选使能（允许操作屏幕）
 	mDelaymS(20);		// 等待
@@ -111,4 +111,62 @@ void LCD_Init(void)
 		}
 	}
 	//SPI_Mode(0x00);	// 关闭硬件SPI
+}
+
+/*******************************************************************************
+* Function Name	: LCD_SET
+* Description	: LCD屏幕显示设置
+				  内存格式:{1b命令,1b长度,1b列开始地址,1b列结束地址,1b行开始地址,1b行结束地址,连续数据}
+* Input			: PUIN8XV addr
+* Return		: None
+*******************************************************************************/
+void LCD_SET(PUINT8X dat)
+{
+	static UINT8 len,i;
+	switch(*dat) {
+		case 0xFA:
+			len = *++dat;
+			SPI_CS = 1;
+			SPI_CS = 0;
+
+			SPI_MODE(0x60);
+			SPI_CMD(0x2A);		// 列地址设置(0-239)
+			SPI_DAT(0x00);
+			SPI_DAT(*++dat);
+			SPI_CMD(0x2B);		// 行地址设置(0-239)
+			SPI_DAT(0x00);
+			SPI_DAT(*++dat);
+			SPI_CMD(0x2C);		// 写LCD数据存储器
+			for(;len;--len)
+			{
+				SPI_DAT(*++dat);
+			}
+			SPI_MODE(0x00);
+			break;
+		case 0xFB:
+			len = *++dat;
+			SPI_CS = 1;
+			SPI_CS = 0;
+
+			SPI_MODE(0x60);
+			SPI_CMD(0x2A);		// 列地址设置(0-239)
+			SPI_DAT(0x00);
+			SPI_DAT(*++dat);
+			SPI_CMD(0x2B);		// 行地址设置(0-239)
+			SPI_DAT(0x00);
+			SPI_DAT(*++dat);
+			SPI_CMD(0x2C);		// 写LCD数据存储器
+			for(;len;--len)
+			{
+				++dat;
+				for(i=0x80;i;i>>=1)
+				{
+					SPI_DAT(*dat&i?0xFF:0x00);
+				}
+			}
+			SPI_MODE(0x00);
+			break;
+		default:
+			break;
+	}
 }

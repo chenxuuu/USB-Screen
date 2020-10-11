@@ -14,6 +14,7 @@
 #define ChipIdData4				(*(PUINT8C)(0x3FFB))		// ChipID保留
 #define ChipIdData5				(*(PUINT8C)(0x3FFA))		// ChipID最高字节
 
+extern UINT8 DMA_STATUS;
 extern void USB_DeviceInit(void);
 extern void HID_DeviceInterrupt(void);
 
