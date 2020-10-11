@@ -1,0 +1,57 @@
+﻿<Window x:Class="UsbScreen.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:UsbScreen"
+        mc:Ignorable="d"
+        WindowStartupLocation="CenterScreen" WindowStyle="None" AllowsTransparency="True"
+        Height="270" Width="480" Background="#00000000" BorderBrush ="#20666666"
+        Title="UsbScreen" SnapsToDevicePixels="True">
+	<Window.Resources>
+		<ResourceDictionary>
+			<ResourceDictionary.MergedDictionaries>
+				<ResourceDictionary Source="/UsbScreen;component/Themes/TitleBarStyle.xaml"/>
+			</ResourceDictionary.MergedDictionaries>
+		</ResourceDictionary>
+	</Window.Resources>
+	<DockPanel>
+		<Grid x:Name="TitleBar" Height="30" Background="#333333" DockPanel.Dock="Top">
+			<TextBlock Text="UsbScreen" Foreground="White" Opacity=".75" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="10,0"/>
+			<StackPanel x:Name="TitleMenu" HorizontalAlignment="Right" Orientation="Horizontal">
+				<Button x:Name="MinSize" Style="{StaticResource Minimize}"/>
+				<Button x:Name="AppExit" Style="{StaticResource ExitButton}"/>
+			</StackPanel>
+			<ProgressBar x:Name="progress" Height="2" VerticalAlignment="Bottom" BorderThickness="0" Background="{x:Null}"/>
+		</Grid>
+		<DockPanel Background="#FFEEEEEE">
+			<Canvas x:Name="Preview" Width="240" ClipToBounds="True" Background="#888888">
+				<Image x:Name="ImageBox"  Canvas.Left="0" Canvas.Top="0"/>
+				<Image x:Name="ShowCapture" Canvas.Left="0" Canvas.Top="0"/>
+			</Canvas>
+			<StackPanel x:Name="SysPanel" Margin="5">
+				<Label Content="设备列表:" Padding="0, 5"/>
+				<ComboBox DockPanel.Dock="Top" x:Name="DeviceComboBox" Height="25" Focusable="False" Cursor="Hand"/>
+				<Grid>
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="*"/>
+						<ColumnDefinition Width="0.05*"/>
+						<ColumnDefinition Width="*"/>
+					</Grid.ColumnDefinitions>
+					<StackPanel Grid.Column="0">
+						<Button Content="载入图片" Height="25" Margin="0,5,0,0" Focusable="False" x:Name="LoadImg" Cursor="Hand"/>
+						<CheckBox x:Name="sspi" Content="使用软件SPI" Margin="10,5,0,0" Height="25" VerticalContentAlignment="Center"/>
+					</StackPanel>
+					<StackPanel Grid.Column="2">
+						<Button Content="屏幕捕获" Height="25" Margin="0,5,0,0" Focusable="False" x:Name="Capture" Cursor="Cross"/>
+						<Button Content="刷新图像" Height="25" Margin="0,5,0,0" Focusable="False" x:Name="Refresh" Cursor="Hand"/>
+					</StackPanel>
+				</Grid>
+				<Button Content="暂未使用" Height="25" Margin="0,5,0,0" Focusable="False" Cursor="Hand" Visibility="Hidden"/>
+				<Button Content="暂未使用" Height="25" Margin="0,5,0,0" Focusable="False" Cursor="Hand" Visibility="Hidden"/>
+				<Button Content="暂未使用" Height="25" Margin="0,5,0,0" Focusable="False" Cursor="Hand" Visibility="Hidden"/>
+				<Button Content="更新固件" Height="25" Margin="0,5,0,0" Focusable="False" x:Name="LoadHex" Cursor="Hand"/>
+			</StackPanel>
+		</DockPanel>
+    </DockPanel>
+</Window>

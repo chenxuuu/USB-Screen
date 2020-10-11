@@ -58,7 +58,7 @@
             </Setter.Value>
         </Setter>
     </Style>
-    <Style x:Key="ExitButton" TargetType="{x:Type Button}">
+	<Style x:Key="Minimize" TargetType="{x:Type Button}">
         <Setter Property="Opacity" Value="0.5"/>
         <Setter Property="Foreground" Value="White" />
         <Setter Property="Background" Value="Transparent" />
@@ -71,8 +71,7 @@
 					<Grid VerticalAlignment="Center" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}">
                         <Border Background="{TemplateBinding Background}">
                             <Canvas VerticalAlignment="Center" HorizontalAlignment="Center">
-                                <Line StrokeThickness="2" Stroke="White" X1="-5" Y1="-5" X2="5" Y2="5"></Line>
-                                <Line StrokeThickness="2" Stroke="White" X1="-5" Y1="5" X2="5" Y2="-5"></Line>
+                                <Line StrokeThickness="2" Stroke="White" X1="-5" Y1="5" X2="5" Y2="5"></Line>
                             </Canvas>
                         </Border>
                     </Grid>
@@ -86,7 +85,35 @@
             </Setter.Value>
         </Setter>
     </Style>
-    <Style x:Key="MenuButton" TargetType="{x:Type Button}">
+	<Style x:Key="ExitButton" TargetType="{x:Type Button}">
+		<Setter Property="Opacity" Value="0.5"/>
+		<Setter Property="Foreground" Value="White" />
+		<Setter Property="Background" Value="Transparent" />
+		<Setter Property="Focusable" Value="False"/>
+		<Setter Property="Width" Value="30"/>
+		<Setter Property="Height" Value="30"/>
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="{x:Type Button}">
+					<Grid VerticalAlignment="Center" Height="{TemplateBinding Height}" Width="{TemplateBinding Width}">
+						<Border Background="{TemplateBinding Background}">
+							<Canvas VerticalAlignment="Center" HorizontalAlignment="Center">
+								<Line StrokeThickness="2" Stroke="White" X1="-5" Y1="-5" X2="5" Y2="5"></Line>
+								<Line StrokeThickness="2" Stroke="White" X1="-5" Y1="5" X2="5" Y2="-5"></Line>
+							</Canvas>
+						</Border>
+					</Grid>
+					<ControlTemplate.Triggers>
+						<Trigger Property="IsMouseOver"  Value="True">
+							<Setter Property="Opacity" Value="1"/>
+							<Setter Property="Background" Value="#20FFFFFF"/>
+						</Trigger>
+					</ControlTemplate.Triggers>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+	<Style x:Key="MenuButton" TargetType="{x:Type Button}">
         <Setter Property="Opacity" Value="0.5"/>
         <Setter Property="Foreground" Value="White" />
         <Setter Property="Background" Value="Transparent" />
