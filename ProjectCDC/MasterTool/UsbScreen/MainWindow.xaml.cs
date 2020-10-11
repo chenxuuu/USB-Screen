@@ -87,22 +87,6 @@ namespace UsbScreen
 					ImageBox.Source = new BitmapImage(new Uri(FileLoader.FileName));
 				}
 			};
-			//Capture.PreviewMouseLeftButtonDown += delegate
-			//{
-			//	//if (Capture.AllowDrop)
-			//	//{
-			//	//	Capture.AllowDrop = false;
-			//	//	Capture.Content = "屏幕捕获";
-			//	//	ShowCapture.Source = new BitmapImage();
-			//	//}
-			//	//else
-			//	//{
-			//	//	Capture.AllowDrop = true;
-			//	//	Capture.Content = "停止捕获";
-			//	//	ShowCapture.Source = ScreenCapture.ScreenSnapshot();
-			//	//}
-			//	ShowCapture.Source = ScreenCapture.ScreenSnapshot();
-			//};
 			// 屏幕捕获
 			Capture.PreviewMouseMove += (sender, e) =>
 			{
@@ -125,40 +109,9 @@ namespace UsbScreen
 			// 刷新图像
 			Refresh.Click += delegate
 			{
-				List<byte> ColorList = new List<byte>();
-
-				RenderTargetBitmap bmp = new RenderTargetBitmap(240, 240, 96, 96, PixelFormats.Pbgra32);
-				bmp.Render(Preview);
-				using (var outStream = new MemoryStream())
-				{
-					BitmapEncoder encoder = new BmpBitmapEncoder();
-					encoder.Frames.Add(BitmapFrame.Create(bmp));
-					encoder.Save(outStream);
-					using (Bitmap img = new Bitmap(outStream))
-					{
-						for (int h = 0; h < 240; ++h)
-						{
-							for (int v = 0; v < 240; ++v)
-							{
-								Color color = img.GetPixel(v, h);
-								var rgb565 = color.R / 8 * 2048 + color.G / 4 * 32 + color.B / 8;
-								ColorList.Add((byte)(rgb565 >> 8));
-								ColorList.Add((byte)(rgb565 & 0xFF));
-							}
-						}
-					}
-				}
-
-				byte spicmd = sspi.IsChecked.Value ? 0xFB : 0xFA;
-				List<byte[]> ImageArr = new List<byte[]>();
-				for (int i = 0; i < ColorList.Count; i += 60)
-				{
-					List<byte> tmp = new List<byte> { spicmd, 0x3C, (byte)((i % 480) / 2), (byte)(i / 480) };
-					tmp.AddRange(ColorList.Skip(i).Take(60));
-					ImageArr.Add(tmp.ToArray());
-				}
-
-				SetDeviceData(ImageArr);
+				CaptureArea(out List<byte[]> ImageArr);
+				ImageArr.ForEach(b => SendBufferQueue.Enqueue(b));
+				SetDeviceData();
 			};
 			// 更新固件
 			LoadHex.Click += delegate
@@ -184,6 +137,47 @@ namespace UsbScreen
 			};
 		}
 
+		/// <summary>
+		/// 捕获屏幕区域
+		/// </summary>
+		/// <param name="ImageArr">输出图片数据</param>
+		public void CaptureArea(out List<byte[]> ImageArr)
+		{
+			List<byte> ColorList = new List<byte>();
+			if (AutoCapture.IsChecked.Value)
+			{
+				ShowCapture.Source = ScreenCapture.ScreenSnapshot();
+			}
+			RenderTargetBitmap bmp = new RenderTargetBitmap(240, 240, 96, 96, PixelFormats.Pbgra32);
+			bmp.Render(Preview);
+			using (var outStream = new MemoryStream())
+			{
+				BitmapEncoder encoder = new BmpBitmapEncoder();
+				encoder.Frames.Add(BitmapFrame.Create(bmp));
+				encoder.Save(outStream);
+				using (Bitmap img = new Bitmap(outStream))
+				{
+					for (int h = 0; h < 240; ++h)
+					{
+						for (int v = 0; v < 240; ++v)
+						{
+							Color color = img.GetPixel(v, h);
+							var rgb565 = color.R / 8 * 2048 + color.G / 4 * 32 + color.B / 8;
+							ColorList.Add((byte)(rgb565 >> 8));
+							ColorList.Add((byte)(rgb565 & 0xFF));
+						}
+					}
+				}
+			}
+
+			ImageArr = new List<byte[]>();
+			for (int i = 0; i < ColorList.Count; i += 60)
+			{
+				List<byte> tmp = new List<byte> { 0xFA, 0x3C, (byte)((i % 480) / 2), (byte)(i / 480) };
+				tmp.AddRange(ColorList.Skip(i).Take(60));
+				ImageArr.Add(tmp.ToArray());
+			}
+		}
 
 		/// <summary>
 		/// 创建Windows事件监听器
@@ -281,8 +275,7 @@ namespace UsbScreen
 		/// <summary>
 		/// 向选定的串口发送数据
 		/// </summary>
-		/// <param name="buffer">要发送的数据</param>
-		private void SetDeviceData(List<byte[]> buffer)
+		private void SetDeviceData()
 		{
 			if (DeviceComboBox.SelectedIndex > -1)
 			{
@@ -294,18 +287,30 @@ namespace UsbScreen
 					try
 					{
 						com.Open();
-						Console.WriteLine($"[数据发送开始] 共计{buffer.Count}个数据包");
 						Stopwatch sw = new Stopwatch();
 						sw.Start();
-						buffer.ForEach(data => { com.Write(data, 0, data.Length); });
+						while (SendBufferQueue.TryDequeue(out byte[] data))
+						{
+							com.Write(data, 0, data.Length);
+						}
 						sw.Stop();
-						Console.WriteLine($"[数据发送完成] 共计耗时:{sw.Elapsed}");
 						com.Close();
 					}
 					catch (Exception e)
 					{
-						Console.WriteLine(e.Message);
+						Debug.WriteLine(e.Message);
 					}
+					return com;
+				}).ContinueWith(com => {
+					this.Dispatcher.Invoke((Action)delegate
+					{
+						if(AutoCapture.IsChecked.Value)
+						{
+							CaptureArea(out List<byte[]> ImageArr);
+							ImageArr.ForEach(b => SendBufferQueue.Enqueue(b));
+							SetDeviceData();
+						}
+					});
 				});
 			}
 		}

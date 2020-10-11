@@ -39,11 +39,11 @@
 						<ColumnDefinition Width="*"/>
 					</Grid.ColumnDefinitions>
 					<StackPanel Grid.Column="0">
-						<Button Content="载入图片" Height="25" Margin="0,5,0,0" Focusable="False" x:Name="LoadImg" Cursor="Hand"/>
-						<CheckBox x:Name="sspi" Content="使用软件SPI" Margin="10,5,0,0" Height="25" VerticalContentAlignment="Center"/>
+						<Button Content="屏幕捕获" Height="25" Margin="0,5,0,0" Focusable="False" x:Name="Capture" Cursor="Cross"/>
+						<CheckBox x:Name="AutoCapture" Content="自动屏幕捕获" Margin="10,5,0,0" Height="25" VerticalContentAlignment="Center"/>
 					</StackPanel>
 					<StackPanel Grid.Column="2">
-						<Button Content="屏幕捕获" Height="25" Margin="0,5,0,0" Focusable="False" x:Name="Capture" Cursor="Cross"/>
+						<Button Content="载入图片" Height="25" Margin="0,5,0,0" Focusable="False" x:Name="LoadImg" Cursor="Hand"/>
 						<Button Content="刷新图像" Height="25" Margin="0,5,0,0" Focusable="False" x:Name="Refresh" Cursor="Hand"/>
 					</StackPanel>
 				</Grid>
