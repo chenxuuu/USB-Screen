@@ -35,10 +35,10 @@ void IOport_Init(void)
 void main(void)
 {
 	setFsys();					// 初始化系统时钟
-	IOport_Init();				// 初始化IO口状态
-	LCD_Init();					// 初始化LCD屏幕
 	USB_DeviceInit();			// 初始化USB功能
 	EA  = 1;					// 使能单片机全局中断
+	IOport_Init();				// 初始化IO口状态
+	LCD_Init();					// 初始化LCD屏幕
 	while(1)
 	{
 		if(DMA_STATUS & 0x01)
