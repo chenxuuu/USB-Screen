@@ -111,8 +111,7 @@ namespace UsbScreen
 			Refresh.Click += delegate
 			{
 				CaptureArea(out List<byte[]> ImageArr);
-				ImageArr.ForEach(b => SendBufferQueue.Enqueue(b));
-				SetDeviceData();
+				SetDeviceData(ImageArr);
 			};
 			// 更新固件
 			LoadHex.Click += delegate
@@ -270,8 +269,10 @@ namespace UsbScreen
 		/// <summary>
 		/// 向选定的串口发送数据
 		/// </summary>
-		private void SetDeviceData()
+		private void SetDeviceData(List<byte[]> buff)
 		{
+			List<byte> data = new List<byte>();
+			buff.ForEach(b => data.AddRange(b));
 			if (DeviceComboBox.SelectedIndex > -1)
 			{
 				string portname = DeviceComboBox.Text;
@@ -284,10 +285,7 @@ namespace UsbScreen
 						com.Open();
 						Stopwatch sw = new Stopwatch();
 						sw.Start();
-						while (SendBufferQueue.TryDequeue(out byte[] data))
-						{
-							com.Write(data, 0, data.Length);
-						}
+						com.Write(data.ToArray(), 0, data.Count);
 						sw.Stop();
 						Debug.Print($"{DateTime.Now:HH:mm:ss.ffff} [数据传输完成] 耗时:{sw.Elapsed}");
 						com.Close();
@@ -303,8 +301,7 @@ namespace UsbScreen
 						if(AutoCapture.IsChecked.Value)
 						{
 							CaptureArea(out List<byte[]> ImageArr);
-							ImageArr.ForEach(b => SendBufferQueue.Enqueue(b));
-							SetDeviceData();
+							SetDeviceData(ImageArr);
 						}
 					});
 				});
