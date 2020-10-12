@@ -25,7 +25,7 @@
 			<ProgressBar x:Name="progress" Height="2" VerticalAlignment="Bottom" BorderThickness="0" Background="{x:Null}"/>
 		</Grid>
 		<DockPanel Background="#FFEEEEEE">
-			<Canvas x:Name="Preview" Width="240" ClipToBounds="True" Background="#888888">
+			<Canvas x:Name="Preview" Width="240" Height="240" ClipToBounds="True" Background="#888888">
 				<Image x:Name="ImageBox"  Canvas.Left="0" Canvas.Top="0"/>
 				<Image x:Name="ShowCapture" Canvas.Left="0" Canvas.Top="0"/>
 			</Canvas>

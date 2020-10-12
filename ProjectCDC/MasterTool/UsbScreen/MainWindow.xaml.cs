@@ -95,7 +95,8 @@ namespace UsbScreen
 					if (Capture.AllowDrop == false)
 					{
 						Capture.AllowDrop = true;
-						ShowCapture.Source = ScreenCapture.ScreenSnapshot();
+						ScreenCapture.ScreenSnapshot(out BitmapSource bitmapSource);
+						ShowCapture.Source = bitmapSource;
 					}
 					Point mousePoint = PointToScreen(e.GetPosition(this));
 					ShowCapture.SetValue(Canvas.LeftProperty, 120 - mousePoint.X);
@@ -143,34 +144,28 @@ namespace UsbScreen
 		/// <param name="ImageArr">输出图片数据</param>
 		public void CaptureArea(out List<byte[]> ImageArr)
 		{
+			ImageArr = new List<byte[]>();
+
+			ScreenCapture.GetScreenCapture(new Rectangle()
+			{
+				X = 0 - Convert.ToInt32(ShowCapture.GetValue(Canvas.LeftProperty)),
+				Y = 0 - Convert.ToInt32(ShowCapture.GetValue(Canvas.TopProperty)),
+				Width = (int)Preview.Width,
+				Height = (int)Preview.Height
+			}, out Bitmap bmp);
+
 			List<byte> ColorList = new List<byte>();
-			if (AutoCapture.IsChecked.Value)
+			for (int h = 0; h < 240; ++h)
 			{
-				ShowCapture.Source = ScreenCapture.ScreenSnapshot();
-			}
-			RenderTargetBitmap bmp = new RenderTargetBitmap(240, 240, 96, 96, PixelFormats.Pbgra32);
-			bmp.Render(Preview);
-			using (var outStream = new MemoryStream())
-			{
-				BitmapEncoder encoder = new BmpBitmapEncoder();
-				encoder.Frames.Add(BitmapFrame.Create(bmp));
-				encoder.Save(outStream);
-				using (Bitmap img = new Bitmap(outStream))
+				for (int v = 0; v < 240; ++v)
 				{
-					for (int h = 0; h < 240; ++h)
-					{
-						for (int v = 0; v < 240; ++v)
-						{
-							Color color = img.GetPixel(v, h);
-							var rgb565 = color.R / 8 * 2048 + color.G / 4 * 32 + color.B / 8;
-							ColorList.Add((byte)(rgb565 >> 8));
-							ColorList.Add((byte)(rgb565 & 0xFF));
-						}
-					}
+					Color color = bmp.GetPixel(v, h);
+					var rgb565 = color.R / 8 * 2048 + color.G / 4 * 32 + color.B / 8;
+					ColorList.Add((byte)(rgb565 >> 8));
+					ColorList.Add((byte)(rgb565 & 0xFF));
 				}
 			}
 
-			ImageArr = new List<byte[]>();
 			for (int i = 0; i < ColorList.Count; i += 60)
 			{
 				List<byte> tmp = new List<byte> { 0xFA, 0x3C, (byte)((i % 480) / 2), (byte)(i / 480) };
@@ -294,6 +289,7 @@ namespace UsbScreen
 							com.Write(data, 0, data.Length);
 						}
 						sw.Stop();
+						Debug.Print($"{DateTime.Now:HH:mm:ss.ffff} [数据传输完成] 耗时:{sw.Elapsed}");
 						com.Close();
 					}
 					catch (Exception e)

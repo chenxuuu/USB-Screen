@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -13,29 +14,36 @@ namespace UsbScreen
 	public partial class ScreenCapture
 	{
 		/// <summary>
+		/// 捕获屏幕区域
+		/// </summary>
+		/// <param name="rect">区域范围</param>
+		/// <param name="bmp">输出Bitmap</param>
+		public static void GetScreenCapture(Rectangle rect, out Bitmap bmp)
+		{
+			bmp = new Bitmap(rect.Width, rect.Height);
+			using (Graphics g = Graphics.FromImage(bmp))
+			{
+				g.CopyFromScreen(rect.X, rect.Y, 0, 0, bmp.Size);
+				g.DrawImage(bmp, 0, 0, rect, GraphicsUnit.Pixel);
+			}
+		}
+		/// <summary>
 		/// 获取屏幕截图
 		/// </summary>
 		/// <returns></returns>
-		public static BitmapSource ScreenSnapshot()
+		public static void ScreenSnapshot(out BitmapSource Snapshot)
 		{
-			BitmapSource shotBmp;
-			using (var bmp = new Bitmap((int)SystemParameters.PrimaryScreenWidth, (int)SystemParameters.PrimaryScreenHeight))
+			GetScreenCapture(new Rectangle()
 			{
-				using (var g = Graphics.FromImage(bmp))
-				{
-					g.CopyFromScreen(0, 0, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
-					IntPtr hBitmap = bmp.GetHbitmap();
-					try
-					{
-						shotBmp = Imaging.CreateBitmapSourceFromHBitmap(hBitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
-					}
-					finally
-					{
-						DeleteObject(hBitmap);
-					}
-				}
-			}
-			return shotBmp;
+				X = 0,
+				Y = 0,
+				Width = (int)SystemParameters.PrimaryScreenWidth,
+				Height = (int)SystemParameters.PrimaryScreenHeight
+			}, out Bitmap bmp);
+
+			IntPtr hBitmap = bmp.GetHbitmap();
+			Snapshot = Imaging.CreateBitmapSourceFromHBitmap(hBitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+			DeleteObject(hBitmap);
 		}
 
 		/// <summary>
