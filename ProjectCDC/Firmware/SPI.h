@@ -12,18 +12,19 @@ sbit SPI_SDA = P1 ^ 5;					// SPI数据(MOSI)
 #endif
 
 // 硬件SPI模式配置(0x60模式0;0x68模式1;0x02关闭硬件SPI)
-#ifndef SPI_MODE	
-	#define SPI_MODE(x); SPI0_CTRL=(x);		
+#ifndef SPI_MODE
+	#define SPI_MODE(x); SPI0_CTRL=(x);
 #endif
 
 // 硬件SPI写1Byte数据
 #ifndef SPI_DAT
-	#define SPI_DAT(x); {SPI0_DATA=(x);while(S0_FREE==0);}
+	#define SPI_DAT(x); {while(S0_FREE==0);SPI_DC=1;SPI0_DATA=(x);}
 #endif
+#define SPI_DAT_PURE(x); {while(S0_FREE==0);SPI0_DATA=(x);}
 
 // 硬件SPI写1Byte命令
 #ifndef SPI_CMD
-	#define SPI_CMD(x); {SPI_DC=0;SPI0_DATA=(x);while(S0_FREE==0);SPI_DC=1;}
+	#define SPI_CMD(x); {while(S0_FREE==0);SPI_DC=0;SPI0_DATA=(x);}
 #endif
 
 // 软件SPI写1Byte数据

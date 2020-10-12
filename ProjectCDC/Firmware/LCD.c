@@ -137,10 +137,12 @@ void LCD_SET(PUINT8X dat)
 			SPI_DAT(0x00);
 			SPI_DAT(*++dat);
 			SPI_CMD(0x2C);		// 写LCD数据存储器
+			while(S0_FREE==0);SPI_DC=1;
 			for(;len;--len)
 			{
-				SPI_DAT(*++dat);
+				SPI_DAT_PURE(*++dat);
 			}
+			while(S0_FREE==0);
 			SPI_MODE(0x00);
 			break;
 		case 0xFB:
@@ -156,14 +158,16 @@ void LCD_SET(PUINT8X dat)
 			SPI_DAT(0x00);
 			SPI_DAT(*++dat);
 			SPI_CMD(0x2C);		// 写LCD数据存储器
+			while(S0_FREE==0);SPI_DC=1;
 			for(;len;--len)
 			{
 				++dat;
 				for(i=0x80;i;i>>=1)
 				{
-					SPI_DAT(*dat&i?0xFF:0x00);
+					SPI_DAT_PURE(*dat&i?0xFF:0x00);
 				}
 			}
+			while(S0_FREE==0);
 			SPI_MODE(0x00);
 			break;
 		default:
