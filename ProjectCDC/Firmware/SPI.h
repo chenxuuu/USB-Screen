@@ -6,9 +6,9 @@ sbit SPI_CS = P1 ^ 4;					// 片选;低电平有效
 sbit SPI_SCL = P1 ^ 7;					// SPI时钟
 sbit SPI_SDA = P1 ^ 5;					// SPI数据(MOSI)
 
-// 初始化SPI总线<禁用SPI总线上拉(注意需要外接3.3V弱上拉10K电阻)>
+// 初始化SPI总线<注意需要对总线进行外部消除干扰处理>
 #ifndef SPI_INIT
-	#define SPI_INIT(); {P1_DIR_PU=0x1F;SPI0_CK_SE=0x02;}
+	#define SPI_INIT(); {SPI0_CK_SE=0x02;}
 #endif
 
 // 硬件SPI模式配置(0x60模式0;0x68模式1;0x02关闭硬件SPI)
