@@ -43,8 +43,9 @@ void main(void)
 	{
 		if(DMA_STATUS & 0x01)
 		{
+			ROM_DATA_H = DMA_STATUS&0x10;
 			LCD_SET((PUINT8X)UEP3_DMA);
-			DMA_STATUS &= (~0x01);
+			DMA_STATUS &= (~0x11);
 			if((UDEV_CTRL&bUD_GP_BIT) == 0) 
 			{
 				UEP3_CTRL = UEP3_CTRL & ~MASK_UEP_R_RES | UEP_R_RES_ACK;
@@ -52,8 +53,9 @@ void main(void)
 		}
 		else if(DMA_STATUS & 0x02)
 		{
+			ROM_DATA_H = DMA_STATUS&0x20;
 			LCD_SET((PUINT8X)(UEP3_DMA+0x40));
-			DMA_STATUS &= (~0x02);
+			DMA_STATUS &= (~0x22);
 			if((UDEV_CTRL&bUD_GP_BIT) != 0) 
 			{
 				UEP3_CTRL = UEP3_CTRL & ~MASK_UEP_R_RES | UEP_R_RES_ACK;

@@ -35,7 +35,7 @@ xdata struct UsbBuffer{
 #define USBwLengthL	(UsbSetupBuf->wLengthL)
 #define USBwLengthH	(UsbSetupBuf->wLengthH)
 
-// 定义DMA缓冲区占用标志
+// 定义DMA缓冲区占用标志(0x01缓冲区1收到命令,0x11缓冲区1收到数据; 0x02缓冲区2收到命令,0x22缓冲区2收到数据)
 UINT8 DMA_STATUS = 0;
 
 /*******************************************************************************
@@ -99,18 +99,18 @@ void HID_DeviceInterrupt(void) interrupt INT_NO_USB
 			if (UDEV_CTRL&bUD_GP_BIT)
 			{
 				USBwLength += 0x40;
-				DMA_STATUS |= 0x02;
+				DMA_STATUS |= USB_RX_LEN==64 ? 0x22 : 0x02;
 			}
 			else
 			{
 				USBwLength = UEP3_DMA;
-				DMA_STATUS |= 0x01;
+				DMA_STATUS |= USB_RX_LEN==64 ? 0x11 : 0x01;
 			}
-			if (DMA_STATUS == 0x03)	// 缓冲区满，暂停接收
+			if ((DMA_STATUS&0x0F) == 0x03)	// 缓冲区满，暂停接收
 			{
 				UEP3_CTRL = UEP3_CTRL & ~MASK_UEP_R_RES | UEP_R_RES_NAK;
 			}
-			if(USB_RX_LEN == 1 && (*((PUINT8XV)USBwLength) == 0xB1))
+			if(USB_RX_LEN == 1 && (*((PUINT8X)USBwLength) == 0xB1))
 			{
 				((void(code *)(void))IAP_CODE_ADDR)();	// 跳转到Bootloader
 			}
