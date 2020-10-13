@@ -21,7 +21,7 @@ difference()
         
         translate([0,3,0])//前面扣洞
             cube([ma-l2*2,mc,mb-l3*2],true);
-        translate([0,3,mb/4])//前面再扣洞
+        translate([0,3,mb/4+0.5])//前面再扣洞
             cube([ma-l2*2,mc,mb/2-l2*2],true);
         translate([0,-3,0])//背面扣洞
             cube([ma-ll,mc,mb-ll],true);
@@ -32,7 +32,7 @@ difference()
             cube([ma-ll,mc,mb-ll],true);
 
         translate([0,-3,mb/2+1])//做个槽放盖子
-            cube([ma,mc,3.2],true);
+            cube([ma,mc,3.5],true);
     }
 }
 translate([0,-7.5,0])//背面
@@ -47,7 +47,7 @@ difference()
     {
         translate([0,0,5])//上面扣洞
             cube([ma,mc,mb+10],true);
-        translate([0,0,10])//卡扣
+        translate([0,0,3])//卡扣
             cube([ma+5,4,4],true);
     }
 }
