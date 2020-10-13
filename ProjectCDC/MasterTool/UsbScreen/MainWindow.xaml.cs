@@ -12,11 +12,9 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Microsoft.Win32;
-using Microsoft.Win32.SafeHandles;
 using Color = System.Drawing.Color;
 using Point = System.Windows.Point;
 
@@ -28,28 +26,18 @@ namespace UsbScreen
 	public partial class MainWindow : Window
 	{
 		/// <summary>
+		/// 暂存串口资源
+		/// </summary>
+		public static SerialPort serialport = new SerialPort();
+		public static bool IsAutoCapture = false;
+		/// <summary>
+		/// 缓存图片颜色数据(设置成全局变量，重复使用避免GC)
+		/// </summary>
+		public static List<byte> ImageData = new List<byte>();
+		/// <summary>
 		/// 缓存固件数据
 		/// </summary>
 		public static List<byte[]> Firmware { get; set; }
-
-		/// <summary>
-		/// 串口设备类
-		/// </summary>
-		public class COMDevice
-		{
-			/// <summary>
-			/// 串口ID
-			/// </summary>
-			public string DeviceID { get; set; }
-			/// <summary>
-			/// 设备实例路径
-			/// </summary>
-			public string PNPDeviceID { get; set; }
-		}
-		/// <summary>
-		/// 设备类集合
-		/// </summary>
-		public static List<COMDevice> DeviceList = new List<COMDevice>();
 		/// <summary>
 		/// 数据发送缓冲队列
 		/// </summary>
@@ -107,11 +95,12 @@ namespace UsbScreen
 					Capture.AllowDrop = false;
 				}
 			};
+			// 自动捕获
+			AutoCapture.Click += delegate { IsAutoCapture = AutoCapture.IsChecked.Value; };
 			// 刷新图像
 			Refresh.Click += delegate
 			{
-				CaptureArea(out List<byte[]> ImageArr);
-				SetDeviceData(ImageArr);
+				SetDeviceData();
 			};
 			// 更新固件
 			LoadHex.Click += delegate
@@ -137,36 +126,59 @@ namespace UsbScreen
 			};
 		}
 
-		/// <summary>
-		/// 捕获屏幕区域
-		/// </summary>
-		/// <param name="ImageArr">输出图片数据</param>
-		public void CaptureArea(out List<byte[]> ImageArr)
-		{
-			ImageArr = new List<byte[]>();
 
-			ScreenCapture.GetScreenCapture(new Rectangle()
+		public void SetDeviceData()
+		{
+			if (DeviceComboBox.SelectedIndex == -1) return;
+			Rectangle rectangle = new Rectangle()
 			{
 				X = 0 - Convert.ToInt32(ShowCapture.GetValue(Canvas.LeftProperty)),
 				Y = 0 - Convert.ToInt32(ShowCapture.GetValue(Canvas.TopProperty)),
 				Width = (int)Preview.Width,
 				Height = (int)Preview.Height
-			}, out Bitmap bmp);
+			};
+			serialport.PortName = DeviceComboBox.Text;
+			Task.Factory.StartNew(() =>
+			{
+				serialport.Open();
+				Stopwatch sw = new Stopwatch();
+				do
+				{
+					CaptureArea(ref ImageData, rectangle);
+					SendBufferQueue.Enqueue(new byte[] { 0x00, 0x00, 0xEF, 0x00, 0xEF });
+					SendBufferQueue.Enqueue(ImageData.ToArray());
+					sw.Restart();
+					sw.Start();
+					while (SendBufferQueue.TryDequeue(out byte[] buff))
+					{
+						serialport.Write(buff, 0, buff.Length);
+					}
+					sw.Stop();
+					Debug.Print($"{DateTime.Now:HH:mm:ss.fff} [传输完成] 耗时:{sw.ElapsedMilliseconds}ms");
+				}
+				while (IsAutoCapture);
+				serialport.Close();
+			});
+		}
 
-			List<byte> ColorList = new List<byte>();
+		/// <summary>
+		/// 捕获屏幕区域
+		/// </summary>
+		/// <param name="ImageArr">输出图片数据</param>
+		public void CaptureArea(ref List<byte> colors, Rectangle rect)
+		{
+			ScreenCapture.GetScreenCapture(out Bitmap bmp, rect);
+			colors.Clear();
 			for (int h = 0; h < 240; ++h)
 			{
 				for (int v = 0; v < 240; ++v)
 				{
 					Color color = bmp.GetPixel(v, h);
 					var rgb565 = color.R / 8 * 2048 + color.G / 4 * 32 + color.B / 8;
-					ColorList.Add((byte)(rgb565 >> 8));
-					ColorList.Add((byte)(rgb565 & 0xFF));
+					colors.Add((byte)(rgb565 >> 8));
+					colors.Add((byte)(rgb565 & 0xFF));
 				}
 			}
-
-			ImageArr.Add(new byte[] { 0x00, 0x00, 0xEF, 0x00, 0xEF });
-			ImageArr.Add(ColorList.ToArray());
 		}
 
 		/// <summary>
@@ -262,48 +274,6 @@ namespace UsbScreen
 			});
 		}
 
-		/// <summary>
-		/// 向选定的串口发送数据
-		/// </summary>
-		private void SetDeviceData(List<byte[]> buff)
-		{
-			if (DeviceComboBox.SelectedIndex > -1)
-			{
-				string portname = DeviceComboBox.Text;
-				Task.Factory.StartNew(() =>
-				{
-					SerialPort com = new SerialPort();
-					com.PortName = portname;
-					try
-					{
-						com.Open();
-						Stopwatch sw = new Stopwatch();
-						sw.Start();
-						buff.ForEach(b =>
-						{
-							com.Write(b, 0, b.Length);
-						});
-						sw.Stop();
-						Debug.Print($"{DateTime.Now:HH:mm:ss.ffff} [数据传输完成] 耗时:{sw.Elapsed}");
-						com.Close();
-					}
-					catch (Exception e)
-					{
-						Debug.WriteLine(e.Message);
-					}
-					return com;
-				}).ContinueWith(com => {
-					this.Dispatcher.Invoke((Action)delegate
-					{
-						if(AutoCapture.IsChecked.Value)
-						{
-							CaptureArea(out List<byte[]> ImageArr);
-							SetDeviceData(ImageArr);
-						}
-					});
-				});
-			}
-		}
 
 		/// <summary>
 		/// 转化Hex文件为Bin数据

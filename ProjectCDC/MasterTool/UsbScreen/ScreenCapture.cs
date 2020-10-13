@@ -16,9 +16,9 @@ namespace UsbScreen
 		/// <summary>
 		/// 捕获屏幕区域
 		/// </summary>
-		/// <param name="rect">区域范围</param>
 		/// <param name="bmp">输出Bitmap</param>
-		public static void GetScreenCapture(Rectangle rect, out Bitmap bmp)
+		/// <param name="rect">区域范围</param>
+		public static void GetScreenCapture(out Bitmap bmp, Rectangle rect)
 		{
 			bmp = new Bitmap(rect.Width, rect.Height);
 			using (Graphics g = Graphics.FromImage(bmp))
@@ -33,13 +33,13 @@ namespace UsbScreen
 		/// <returns></returns>
 		public static void ScreenSnapshot(out BitmapSource Snapshot)
 		{
-			GetScreenCapture(new Rectangle()
+			GetScreenCapture(out Bitmap bmp, new Rectangle()
 			{
 				X = 0,
 				Y = 0,
 				Width = (int)SystemParameters.PrimaryScreenWidth,
 				Height = (int)SystemParameters.PrimaryScreenHeight
-			}, out Bitmap bmp);
+			});
 
 			IntPtr hBitmap = bmp.GetHbitmap();
 			Snapshot = Imaging.CreateBitmapSourceFromHBitmap(hBitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
