@@ -30,6 +30,9 @@ difference()
             cube([ma,mc,mb],true);
         translate([0,-3,10])//去掉一个梁
             cube([ma-ll,mc,mb-ll],true);
+
+        translate([0,-3,mb/2+1])//做个槽放盖子
+            cube([ma,mc,3.2],true);
     }
 }
 translate([0,-7.5,0])//背面

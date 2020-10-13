@@ -27,10 +27,6 @@ difference()
     union()
     {
         include<usb_screen.scad>;
-        translate([-16.8,-3.1,5])
-            cube([5,ll,mb],true);//凹槽一侧
-        translate([16.8,-3.1,5])
-            cube([5,ll,mb],true);//凹槽另一侧
         translate([6,-2.5,5])
             cube([12,5,mb],true);//usb口
     }
