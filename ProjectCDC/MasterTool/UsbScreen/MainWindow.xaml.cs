@@ -100,6 +100,7 @@ namespace UsbScreen
 			// 刷新图像
 			Refresh.Click += delegate
 			{
+				if (serialport.IsOpen) return;
 				SetDeviceData();
 			};
 			// 更新固件
@@ -151,7 +152,16 @@ namespace UsbScreen
 					sw.Start();
 					while (SendBufferQueue.TryDequeue(out byte[] buff))
 					{
-						serialport.Write(buff, 0, buff.Length);
+						try
+						{
+							serialport.Write(buff, 0, buff.Length);
+						}
+						catch(Exception e)
+						{
+							Debug.Print($"{DateTime.Now:HH:mm:ss.fff} [传输失败] {e.Message}");
+							serialport.Close();
+							return;
+						}
 					}
 					sw.Stop();
 					Debug.Print($"{DateTime.Now:HH:mm:ss.fff} [传输完成] 耗时:{sw.ElapsedMilliseconds}ms");
