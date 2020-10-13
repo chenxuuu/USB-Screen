@@ -28,7 +28,7 @@ void LCD_Init(void)
 	mDelaymS(20);		// 等待
 	SPI_CS = 1;
 	SPI_CS = 0;
-	//SPI_Mode(0x60);// 启用硬件SPI (使用硬件SPI初始化屏幕); 使用软SPI初始化能看到效果(硬SPI太快,看不到)
+	// 使用软SPI初始化能看到效果(硬SPI太快,看不到)
 	SPI_Send_CMD(0x11);
 	SPI_Send_CMD(0x36);
 	SPI_Send_DAT(0x00);
@@ -110,7 +110,7 @@ void LCD_Init(void)
 			}
 		}
 	}
-	SPI_MODE(0x60);	// 启用硬件SPI
+	SPI_MODE(0x60);		// 启用硬件SPI
 }
 
 /*******************************************************************************
@@ -119,9 +119,10 @@ void LCD_Init(void)
 * Input			: PUIN8XV addr
 * Return		: None
 *******************************************************************************/
-void LCD_SET(PUINT8X p)
+void LCD_SET(PUINT8XV p)
 {
 	static UINT8 len;
+	XBUS_AUX |= bDPTR_AUTO_INC;		// 使能MOVX_@DPTR指令执行后DPTR自动INC
 	if(ROM_DATA_H)	// {64byte数据}
 	{
 		len = 64;
@@ -130,34 +131,34 @@ void LCD_SET(PUINT8X p)
 			ROM_DATA_L=*p;
 			while(S0_FREE==0);
 			SPI0_DATA=ROM_DATA_L;
-			++p;
 		} while (--len);
 	}
 	else	// {1b数据长度，1b列开始地址，1b列结束地址，1b行开始地址，1b行结束地址，n*2byte数据(数据长度必须为偶数)}
 	{
 		len = *p;
 		// 列地址设置(0-239)，高位在前
-		while(S0_FREE==0); SPI_DC=0; SPI0_DATA=0x2A; ++p;
-		while(S0_FREE==0); SPI_DC=1; SPI0_DATA=0x00; ROM_DATA_L=*p;	// 列开始地址
-		while(S0_FREE==0); SPI0_DATA = ROM_DATA_L; ++p;
-		while(S0_FREE==0); SPI0_DATA=0x00; ROM_DATA_L=*p;			// 列结束地址
+		while(S0_FREE==0); SPI_DC=0; SPI0_DATA=0x2A;
+		while(S0_FREE==0); SPI_DC=1; SPI0_DATA&=0x00; ROM_DATA_L=*p;	// 列开始地址
+		while(S0_FREE==0); SPI0_DATA = ROM_DATA_L;
+		while(S0_FREE==0); SPI0_DATA&=0x00; ROM_DATA_L=*p;			// 列结束地址
 		while(S0_FREE==0); SPI0_DATA = ROM_DATA_L;
 		// 行地址设置(0-239)，高位在前
-		while(S0_FREE==0); SPI_DC=0; SPI0_DATA=0x2B; ++p;
-		while(S0_FREE==0); SPI_DC=1; SPI0_DATA=0x00; ROM_DATA_L=*p;	// 行开始地址
-		while(S0_FREE==0); SPI0_DATA = ROM_DATA_L; ++p;
-		while(S0_FREE==0); SPI0_DATA=0x00; ROM_DATA_L=*p;			// 行结束地址
-		while(S0_FREE==0); SPI0_DATA = ROM_DATA_L; ++p;
+		while(S0_FREE==0); SPI_DC=0; SPI0_DATA=0x2B;
+		while(S0_FREE==0); SPI_DC=1; SPI0_DATA&=0x00; ROM_DATA_L=*p;	// 行开始地址
+		while(S0_FREE==0); SPI0_DATA = ROM_DATA_L;
+		while(S0_FREE==0); SPI0_DATA&=0x00; ROM_DATA_L=*p;			// 行结束地址
+		while(S0_FREE==0); SPI0_DATA = ROM_DATA_L;
 		// 写LCD数据命令
-		while(S0_FREE==0); SPI_DC=0; SPI0_DATA=0x2C; ROM_DATA_L=*p++;
+		while(S0_FREE==0); SPI_DC=0; SPI0_DATA=0x2C; ROM_DATA_L=*p;
 		// 写LCD数据内容
 		while(S0_FREE==0); SPI_DC=1;
 		while(len)
 		{
-			SPI0_DATA=ROM_DATA_L;
-			ROM_DATA_L=*p++;
-			--len;
 			while(S0_FREE==0);
+			SPI0_DATA=ROM_DATA_L;
+			ROM_DATA_L=*p;
+			--len;
 		}
 	}
+	XBUS_AUX &= ~bDPTR_AUTO_INC;		// 禁用MOVX_@DPTR指令执行后DPTR自动INC
 }
