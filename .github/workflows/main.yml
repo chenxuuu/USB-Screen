@@ -1,0 +1,24 @@
+name: .NET Build
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        configuration: [Debug, Release]
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup
+        uses: actions/setup-dotnet@v1
+      - name: Build
+        working-directory: USB-Screen/ProjectCDC/MasterTool/
+        run: dotnet build --configuration $env:Configuration
+        env:
+          Configuration: ${{ matrix.configuration }}
