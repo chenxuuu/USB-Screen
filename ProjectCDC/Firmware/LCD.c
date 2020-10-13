@@ -110,69 +110,54 @@ void LCD_Init(void)
 			}
 		}
 	}
-	//SPI_Mode(0x00);	// 关闭硬件SPI
+	SPI_MODE(0x60);	// 启用硬件SPI
 }
 
 /*******************************************************************************
 * Function Name	: LCD_SET
 * Description	: LCD屏幕显示设置
-				  内存格式:{1b命令,1b长度,1b列开始地址,1b列结束地址,1b行开始地址,1b行结束地址,连续数据}
 * Input			: PUIN8XV addr
 * Return		: None
 *******************************************************************************/
 void LCD_SET(PUINT8X p)
 {
-	static UINT8 len,i;
-	switch(*p) {
-		case 0xFA: {
-			len = *++p;
-			SPI_CS = 1;
-			SPI_CS = 0;
-			// 启用硬件SPI
-			SPI_MODE(0x60);
-			// 列地址设置(0-239)，高位在前
-			while(S0_FREE==0); SPI_DC=0; SPI0_DATA=0x2A;
-			while(S0_FREE==0); SPI_DC=1; SPI0_DATA=0x00; ROM_DATA_L=*++p;
-			while(S0_FREE==0); SPI0_DATA = ROM_DATA_L;
-			// 行地址设置(0-239)，高位在前
-			while(S0_FREE==0); SPI_DC=0; SPI0_DATA=0x2B;
-			while(S0_FREE==0); SPI_DC=1; SPI0_DATA=0x00; ROM_DATA_L=*++p;
-			while(S0_FREE==0); SPI0_DATA = ROM_DATA_L;
-			// 写LCD数据命令
-			while(S0_FREE==0); SPI_DC=0; SPI0_DATA=0x2C; ROM_DATA_L=*++p;
-			// 写LCD数据内容
-			while(S0_FREE==0); SPI_DC=1; SPI0_DATA=ROM_DATA_L; ROM_DATA_L=*++p;
-			while(--len) {while(S0_FREE==0); SPI0_DATA=ROM_DATA_L; ROM_DATA_L=*++p;}
-			// 关闭硬件SPI
-			SPI_MODE(0x00);
-			break;
-		}
-		case 0xFB:
-			len = *++p;
-			SPI_CS = 1;
-			SPI_CS = 0;
-
-			SPI_MODE(0x60);
-			SPI_CMD(0x2A);		// 列地址设置(0-239)
-			SPI_DAT(0x00);
-			SPI_DAT(*++p);
-			SPI_CMD(0x2B);		// 行地址设置(0-239)
-			SPI_DAT(0x00);
-			SPI_DAT(*++p);
-			SPI_CMD(0x2C);		// 写LCD数据存储器
-			while(S0_FREE==0);SPI_DC=1;
-			for(;len;--len)
-			{
-				++p;
-				for(i=0x80;i;i>>=1)
-				{
-					SPI_DAT_PURE(*p&i?0xFF:0x00);
-				}
-			}
+	static UINT8 len;
+	if(ROM_DATA_H)	// {64byte数据}
+	{
+		len = 64;
+		do
+		{
+			ROM_DATA_L=*p;
 			while(S0_FREE==0);
-			SPI_MODE(0x00);
-			break;
-		default:
-			break;
+			SPI0_DATA=ROM_DATA_L;
+			++p;
+		} while (--len);
+	}
+	else	// {1b数据长度，1b列开始地址，1b列结束地址，1b行开始地址，1b行结束地址，n*2byte数据(数据长度必须为偶数)}
+	{
+		len = *p;
+		// 列地址设置(0-239)，高位在前
+		while(S0_FREE==0); SPI_DC=0; SPI0_DATA=0x2A; ++p;
+		while(S0_FREE==0); SPI_DC=1; SPI0_DATA=0x00; ROM_DATA_L=*p;	// 列开始地址
+		while(S0_FREE==0); SPI0_DATA = ROM_DATA_L; ++p;
+		while(S0_FREE==0); SPI0_DATA=0x00; ROM_DATA_L=*p;			// 列结束地址
+		while(S0_FREE==0); SPI0_DATA = ROM_DATA_L;
+		// 行地址设置(0-239)，高位在前
+		while(S0_FREE==0); SPI_DC=0; SPI0_DATA=0x2B; ++p;
+		while(S0_FREE==0); SPI_DC=1; SPI0_DATA=0x00; ROM_DATA_L=*p;	// 行开始地址
+		while(S0_FREE==0); SPI0_DATA = ROM_DATA_L; ++p;
+		while(S0_FREE==0); SPI0_DATA=0x00; ROM_DATA_L=*p;			// 行结束地址
+		while(S0_FREE==0); SPI0_DATA = ROM_DATA_L; ++p;
+		// 写LCD数据命令
+		while(S0_FREE==0); SPI_DC=0; SPI0_DATA=0x2C; ROM_DATA_L=*p++;
+		// 写LCD数据内容
+		while(S0_FREE==0); SPI_DC=1;
+		while(len)
+		{
+			SPI0_DATA=ROM_DATA_L;
+			ROM_DATA_L=*p++;
+			--len;
+			while(S0_FREE==0);
+		}
 	}
 }

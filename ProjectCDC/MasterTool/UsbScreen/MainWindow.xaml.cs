@@ -165,12 +165,8 @@ namespace UsbScreen
 				}
 			}
 
-			for (int i = 0; i < ColorList.Count; i += 60)
-			{
-				List<byte> tmp = new List<byte> { 0xFA, 0x3C, (byte)((i % 480) / 2), (byte)(i / 480) };
-				tmp.AddRange(ColorList.Skip(i).Take(60));
-				ImageArr.Add(tmp.ToArray());
-			}
+			ImageArr.Add(new byte[] { 0x00, 0x00, 0xEF, 0x00, 0xEF });
+			ImageArr.Add(ColorList.ToArray());
 		}
 
 		/// <summary>
@@ -271,8 +267,6 @@ namespace UsbScreen
 		/// </summary>
 		private void SetDeviceData(List<byte[]> buff)
 		{
-			List<byte> data = new List<byte>();
-			buff.ForEach(b => data.AddRange(b));
 			if (DeviceComboBox.SelectedIndex > -1)
 			{
 				string portname = DeviceComboBox.Text;
@@ -285,7 +279,10 @@ namespace UsbScreen
 						com.Open();
 						Stopwatch sw = new Stopwatch();
 						sw.Start();
-						com.Write(data.ToArray(), 0, data.Count);
+						buff.ForEach(b =>
+						{
+							com.Write(b, 0, b.Length);
+						});
 						sw.Stop();
 						Debug.Print($"{DateTime.Now:HH:mm:ss.ffff} [数据传输完成] 耗时:{sw.Elapsed}");
 						com.Close();
