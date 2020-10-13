@@ -40,11 +40,11 @@
 					</Grid.ColumnDefinitions>
 					<StackPanel Grid.Column="0">
 						<Button Content="屏幕捕获" Height="25" Margin="0,5,0,0" Focusable="False" x:Name="Capture" Cursor="Cross"/>
-						<CheckBox x:Name="AutoCapture" Content="自动屏幕捕获" Margin="10,5,0,0" Height="25" VerticalContentAlignment="Center"/>
+						<Button Content="载入图片" Height="25" Margin="0,5,0,0" Focusable="False" x:Name="LoadImg" Cursor="Hand"/>
 					</StackPanel>
 					<StackPanel Grid.Column="2">
-						<Button Content="载入图片" Height="25" Margin="0,5,0,0" Focusable="False" x:Name="LoadImg" Cursor="Hand"/>
-						<Button Content="刷新图像" Height="25" Margin="0,5,0,0" Focusable="False" x:Name="Refresh" Cursor="Hand"/>
+						<CheckBox x:Name="AutoCapture" Content="自动屏幕捕获" Margin="10,5,0,0" Height="25" VerticalContentAlignment="Center"/>
+						<Button Content="刷新图像" Height="25" Margin="0,5,0,0" Focusable="False" x:Name="Refresh" Visibility="Hidden" Cursor="Hand"/>
 					</StackPanel>
 				</Grid>
 				<Button Content="暂未使用" Height="25" Margin="0,5,0,0" Focusable="False" Cursor="Hand" Visibility="Hidden"/>

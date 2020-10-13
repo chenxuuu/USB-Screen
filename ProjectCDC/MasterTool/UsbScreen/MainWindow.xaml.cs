@@ -13,6 +13,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Microsoft.Win32;
@@ -74,36 +75,74 @@ namespace UsbScreen
 				{
 					ShowCapture.Source = new BitmapImage();
 					ImageBox.Source = new BitmapImage(new Uri(FileLoader.FileName));
+
+					// 输出图片数据到下位机
+					if (serialport.IsOpen) return;
+					AutoCapture.IsChecked = false;
+					Rectangle rectangle = new Rectangle()
+					{
+						X = (int)Preview.PointToScreen(new Point(0, 0)).X,
+						Y = (int)Preview.PointToScreen(new Point(0, 0)).Y,
+						Width = (int)Preview.Width,
+						Height = (int)Preview.Height
+					};
+					SetDeviceData(rectangle);
 				}
 			};
 			// 屏幕捕获
+			Capture.PreviewMouseLeftButtonDown += delegate
+			{
+				Capture.CaptureMouse();
+				ScreenCapture.ScreenSnapshot(out BitmapSource bitmapSource);
+				ShowCapture.Source = bitmapSource;
+			};
+			// 移动捕获坐标
 			Capture.PreviewMouseMove += (sender, e) =>
 			{
 				if (e.LeftButton == MouseButtonState.Pressed)
 				{
-					if (Capture.AllowDrop == false)
-					{
-						Capture.AllowDrop = true;
-						ScreenCapture.ScreenSnapshot(out BitmapSource bitmapSource);
-						ShowCapture.Source = bitmapSource;
-					}
 					Point mousePoint = PointToScreen(e.GetPosition(this));
 					ShowCapture.SetValue(Canvas.LeftProperty, 120 - mousePoint.X);
 					ShowCapture.SetValue(Canvas.TopProperty, 120 - mousePoint.Y);
 				}
-				else
+			};
+			// 向下位机发送捕获结果
+			Capture.PreviewMouseLeftButtonUp += delegate
+			{
+				if (Capture.IsMouseCaptured && (serialport.IsOpen == false))
 				{
-					Capture.AllowDrop = false;
+					Capture.ReleaseMouseCapture();
+					Rectangle rect = new Rectangle()
+					{
+						X = (int)Preview.PointToScreen(new Point(0, 0)).X,
+						Y = (int)Preview.PointToScreen(new Point(0, 0)).Y,
+						Width = (int)Preview.Width,
+						Height = (int)Preview.Height
+					};
+					if (AutoCapture.IsChecked.Value)
+					{
+						rect.X = 0 - Convert.ToInt32(ShowCapture.GetValue(Canvas.LeftProperty));
+						rect.Y = 0 - Convert.ToInt32(ShowCapture.GetValue(Canvas.TopProperty));
+					}
+					SetDeviceData(rect);
 				}
 			};
 			// 自动捕获
-			AutoCapture.Click += delegate { IsAutoCapture = AutoCapture.IsChecked.Value; };
+			AutoCapture.Checked += delegate { IsAutoCapture = AutoCapture.IsChecked.Value; };
+			AutoCapture.Unchecked += delegate { IsAutoCapture = AutoCapture.IsChecked.Value; };
 			// 刷新图像
-			Refresh.Click += delegate
-			{
-				if (serialport.IsOpen) return;
-				SetDeviceData();
-			};
+			//Refresh.Click += delegate
+			//{
+			//	if (serialport.IsOpen) return;
+			//	Rectangle rectangle = new Rectangle()
+			//	{
+			//		X = 0 - Convert.ToInt32(ShowCapture.GetValue(Canvas.LeftProperty)),
+			//		Y = 0 - Convert.ToInt32(ShowCapture.GetValue(Canvas.TopProperty)),
+			//		Width = (int)Preview.Width,
+			//		Height = (int)Preview.Height
+			//	};
+			//	SetDeviceData(rectangle);
+			//};
 			// 更新固件
 			LoadHex.Click += delegate
 			{
@@ -120,7 +159,7 @@ namespace UsbScreen
 				//});
 				SendBufferQueue = new ConcurrentQueue<byte[]>();
 				SendBufferQueue.Enqueue(new byte[] { 0xB1, 0x00 });// 进入Bootloader模式命令
-				//Transceiver(new byte[] { 0xB0 });// 启动数据收发器
+																   //Transceiver(new byte[] { 0xB0 });// 启动数据收发器
 			};
 			this.Loaded += delegate
 			{
@@ -129,16 +168,9 @@ namespace UsbScreen
 		}
 
 
-		public void SetDeviceData()
+		public void SetDeviceData(Rectangle rect)
 		{
 			if (DeviceComboBox.SelectedIndex == -1) return;
-			Rectangle rectangle = new Rectangle()
-			{
-				X = 0 - Convert.ToInt32(ShowCapture.GetValue(Canvas.LeftProperty)),
-				Y = 0 - Convert.ToInt32(ShowCapture.GetValue(Canvas.TopProperty)),
-				Width = (int)Preview.Width,
-				Height = (int)Preview.Height
-			};
 			serialport.PortName = DeviceComboBox.Text;
 			Task.Factory.StartNew(() =>
 			{
@@ -146,7 +178,7 @@ namespace UsbScreen
 				Stopwatch sw = new Stopwatch();
 				do
 				{
-					CaptureArea(ref ImageData, rectangle);
+					CaptureArea(ref ImageData, rect);
 					SendBufferQueue.Enqueue(new byte[] { 0x00, 0x00, 0xEF, 0x00, 0xEF });
 					SendBufferQueue.Enqueue(ImageData.ToArray());
 					sw.Restart();
@@ -157,7 +189,7 @@ namespace UsbScreen
 						{
 							serialport.Write(buff, 0, buff.Length);
 						}
-						catch(Exception e)
+						catch (Exception e)
 						{
 							Debug.Print($"{DateTime.Now:HH:mm:ss.fff} [传输失败] {e.Message}");
 							return;
@@ -257,7 +289,7 @@ namespace UsbScreen
 				{
 					foreach (ManagementObject Entity in searcher.Get())
 					{
-						if ((Entity["PNPDeviceID"] as string).EndsWith("ST1E6DIPSF0F0SPI3"))	// 筛选目标设备
+						if ((Entity["PNPDeviceID"] as string).EndsWith("ST1E6DIPSF0F0SPI3"))    // 筛选目标设备
 						{
 							SerialPorts.Add(Entity["DeviceID"] as string);
 						}
