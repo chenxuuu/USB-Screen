@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.IO.Ports;
 using System.Linq;
@@ -159,7 +160,6 @@ namespace UsbScreen
 						catch(Exception e)
 						{
 							Debug.Print($"{DateTime.Now:HH:mm:ss.fff} [传输失败] {e.Message}");
-							serialport.Close();
 							return;
 						}
 					}
