@@ -15,8 +15,7 @@ difference()
     cube([ma+4,mc+4,mb+5],true);
     union()
     {
-        translate([0,0,-1])//中间的空间向下一点
-            cube([ma,mc,mb],true);//中间的空间
+        cube([ma,mc,mb],true);//中间的空间
         translate([0,0,-1.5])//屏幕排线
             cube([ma-10,mc,mb],true);
         
@@ -33,8 +32,8 @@ difference()
             cube([ma-ll,mc,mb-ll],true);
     }
 }
-translate([0,-8,0])//背面
-    cube([ma+4,3,mb+5],true);
+translate([0,-7.5,0])//背面
+    cube([ma+4,2,mb+5],true);
 
 difference()
 {
@@ -45,6 +44,8 @@ difference()
     {
         translate([0,0,5])//上面扣洞
             cube([ma,mc,mb+10],true);
+        translate([0,0,10])//卡扣
+            cube([ma+5,4,4],true);
     }
 }
 
