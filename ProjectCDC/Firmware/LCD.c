@@ -140,13 +140,13 @@ void LCD_SET(PUINT8XV p)
 		while(S0_FREE==0); SPI_DC=0; SPI0_DATA=0x2A;
 		while(S0_FREE==0); SPI_DC=1; SPI0_DATA&=0x00; ROM_DATA_L=*p;	// 列开始地址
 		while(S0_FREE==0); SPI0_DATA = ROM_DATA_L;
-		while(S0_FREE==0); SPI0_DATA&=0x00; ROM_DATA_L=*p;			// 列结束地址
+		while(S0_FREE==0); SPI0_DATA&=0x00; ROM_DATA_L=*p;				// 列结束地址
 		while(S0_FREE==0); SPI0_DATA = ROM_DATA_L;
 		// 行地址设置(0-239)，高位在前
 		while(S0_FREE==0); SPI_DC=0; SPI0_DATA=0x2B;
 		while(S0_FREE==0); SPI_DC=1; SPI0_DATA&=0x00; ROM_DATA_L=*p;	// 行开始地址
 		while(S0_FREE==0); SPI0_DATA = ROM_DATA_L;
-		while(S0_FREE==0); SPI0_DATA&=0x00; ROM_DATA_L=*p;			// 行结束地址
+		while(S0_FREE==0); SPI0_DATA&=0x00; ROM_DATA_L=*p;				// 行结束地址
 		while(S0_FREE==0); SPI0_DATA = ROM_DATA_L;
 		// 写LCD数据命令
 		while(S0_FREE==0); SPI_DC=0; SPI0_DATA=0x2C; ROM_DATA_L=*p;

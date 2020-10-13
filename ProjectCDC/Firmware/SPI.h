@@ -20,7 +20,6 @@ sbit SPI_SDA = P1^5;					// SPI数据(MOSI)
 #ifndef SPI_DAT
 	#define SPI_DAT(x); {while(S0_FREE==0);SPI_DC=1;SPI0_DATA=(x);}
 #endif
-#define SPI_DAT_PURE(x); {while(S0_FREE==0);SPI0_DATA=(x);}
 
 // 硬件SPI写1Byte命令
 #ifndef SPI_CMD
