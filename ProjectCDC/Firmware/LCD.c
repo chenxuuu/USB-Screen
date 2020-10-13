@@ -121,17 +121,38 @@ void LCD_Init(void)
 *******************************************************************************/
 void LCD_SET(PUINT8XV p)
 {
-	static UINT8 len;
+	static UINT8 len;				// 数据长度{最高位:色彩模式命令; 低7位:数据长度0-64}
+	static UINT8 mode = 0x00;		// 色彩模式<零:rgb565彩色; 非零:黑白>
+	static UINT8 i;					// 黑白模式数据分离
 	XBUS_AUX |= bDPTR_AUTO_INC;		// 使能MOVX_@DPTR指令执行后DPTR自动INC
 	if(ROM_DATA_H)	// {64byte数据}
 	{
 		len = 64;
-		do
+		if(mode==0x00)
 		{
-			ROM_DATA_L=*p;
-			while(S0_FREE==0);
-			SPI0_DATA=ROM_DATA_L;
-		} while (--len);
+			do
+			{
+				ROM_DATA_L=*p;
+				while(S0_FREE==0);
+				SPI0_DATA=ROM_DATA_L;
+			} while (--len);
+		}
+		else
+		{
+			do
+			{
+				ROM_DATA_L=*p;
+				do
+				{
+					ROM_DATA_H = ROM_DATA_L&i ? 0xFF : 0x00;
+					while(S0_FREE==0);
+					SPI0_DATA = ROM_DATA_H;
+					i>>=1;
+					while(S0_FREE==0);
+					SPI0_DATA = ROM_DATA_H;
+				} while (i);
+			} while (--len);
+		}
 	}
 	else	// {1b数据长度，1b列开始地址，1b列结束地址，1b行开始地址，1b行结束地址，n*2byte数据(数据长度必须为偶数)}
 	{
@@ -150,15 +171,38 @@ void LCD_SET(PUINT8XV p)
 		while(S0_FREE==0); SPI0_DATA = ROM_DATA_L;
 		// 写LCD数据命令
 		while(S0_FREE==0); SPI_DC=0; SPI0_DATA=0x2C; ROM_DATA_L=*p;
-		// 写LCD数据内容
+		// 读色彩模式命令
+		mode = len&0x80;
+		len &= 0x7F;
 		while(S0_FREE==0); SPI_DC=1;
-		while(len)
+		// 写LCD数据内容
+		if(mode==0x00)
 		{
-			while(S0_FREE==0);
-			SPI0_DATA=ROM_DATA_L;
-			ROM_DATA_L=*p;
-			--len;
+			while(len)
+			{
+				while(S0_FREE==0);
+				SPI0_DATA=ROM_DATA_L;
+				ROM_DATA_L=*p;
+				--len;
+			}
 		}
+		else
+		{
+			while(len)
+			{
+				ROM_DATA_L=*p;
+				i=0x80;
+				do
+				{
+					ROM_DATA_H = ROM_DATA_L&i ? 0xFF : 0x00;
+					while(S0_FREE==0); SPI0_DATA = ROM_DATA_H;
+					i>>=1;
+					while(S0_FREE==0); SPI0_DATA = ROM_DATA_H;
+				} while (i);
+				--len;
+			}
+		}
+		
 	}
 	XBUS_AUX &= ~bDPTR_AUTO_INC;		// 禁用MOVX_@DPTR指令执行后DPTR自动INC
 }
