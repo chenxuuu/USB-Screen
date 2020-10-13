@@ -16,12 +16,12 @@ difference()
     {
         translate([0,-2,mb/2+1])
             cube([ma-0.4,mc+4-0.2,2.8],true);
-        difference()
+        difference()//两边的脚
         {
-            translate([0,-5,mb/2-4])
-                cube([ma+2,1.7,8],true);
-            translate([0,-5,mb/2-4])
-                cube([ma-3,1.8,8.2],true);
+            translate([0,-5,mb/2-7])
+                cube([ma+2,2,15],true);
+            translate([0,-5,mb/2-7])
+                cube([ma-3,2.1,18],true);
         }
     }
     union()
