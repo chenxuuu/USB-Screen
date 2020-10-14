@@ -182,6 +182,7 @@ namespace UsbScreen
 					SendBufferQueue.Enqueue(new byte[] { 0x00, 0x00, 0xEF, 0x00, 0xEF });
 					SendBufferQueue.Enqueue(ImageData.ToArray());
 					sw.Restart();
+					Debug.Print($"{DateTime.Now:HH:mm:ss.fff} [传输开始] 共计:{ImageData.Count + 5}Byte");
 					sw.Start();
 					while (SendBufferQueue.TryDequeue(out byte[] buff))
 					{
