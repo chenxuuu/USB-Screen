@@ -26,9 +26,9 @@ PC控制端正在制作中
 # 使用的开发软件/框架
 
 - 硬件设计：KICAD
-- 嵌入式软件：标准C51（Keil/SDCC）
+- 嵌入式软件：标准C51 (Keil/SDCC)
 - 外壳：OpenSCAD
-- PC客户端：.net framework
+- PC客户端：WPF (.net framework 4.0)
 
 欢迎[提建议](https://github.com/chenxuuu/USB-Screen/issues)或直接参与开发。
 
