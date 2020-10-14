@@ -18,7 +18,7 @@ jobs:
       - name: Setup
         uses: actions/setup-dotnet@v1
       - name: Build
-        working-directory: USB-Screen/ProjectCDC/MasterTool/
+        working-directory: ProjectCDC/MasterTool/
         run: dotnet build --configuration $env:Configuration
         env:
           Configuration: ${{ matrix.configuration }}
