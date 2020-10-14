@@ -1,5 +1,4 @@
 EESchema Schematic File Version 4
-LIBS:USB-Screen-cache
 EELAYER 30 0
 EELAYER END
 $Descr A4 11693 8268
@@ -747,8 +746,6 @@ F 3 "" H 1450 2700 50  0001 C CNN
 	1    1450 2700
 	1    0    0    -1  
 $EndComp
-NoConn ~ 2350 1400
-NoConn ~ 2350 1500
 NoConn ~ 2350 2300
 NoConn ~ 2350 2400
 Wire Wire Line
@@ -765,4 +762,44 @@ Text Label 2750 2000 2    50   ~ 0
 USB_D+
 Text Label 2750 1800 2    50   ~ 0
 USB_D-
+$Comp
+L Device:R R7
+U 1 1 5F878E06
+P 2650 1400
+F 0 "R7" V 2550 1400 50  0000 C CNN
+F 1 "5.1K" V 2650 1400 50  0000 C CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 2580 1400 50  0001 C CNN
+F 3 "~" H 2650 1400 50  0001 C CNN
+	1    2650 1400
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:R R8
+U 1 1 5F88C5EE
+P 2650 1500
+F 0 "R8" V 2550 1500 50  0000 C CNN
+F 1 "5.1K" V 2650 1500 50  0000 C CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 2580 1500 50  0001 C CNN
+F 3 "~" H 2650 1500 50  0001 C CNN
+	1    2650 1500
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	2350 1400 2500 1400
+Wire Wire Line
+	2350 1500 2500 1500
+Wire Wire Line
+	2800 1400 2800 1500
+$Comp
+L power:GND #PWR012
+U 1 1 5F898A63
+P 2800 1500
+F 0 "#PWR012" H 2800 1250 50  0001 C CNN
+F 1 "GND" H 2805 1327 50  0000 C CNN
+F 2 "" H 2800 1500 50  0001 C CNN
+F 3 "" H 2800 1500 50  0001 C CNN
+	1    2800 1500
+	1    0    0    -1  
+$EndComp
+Connection ~ 2800 1500
 $EndSCHEMATC
