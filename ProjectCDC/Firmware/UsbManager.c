@@ -11,30 +11,8 @@
 #include "UsbManager.h"
 #include "SPI.h"
 
-
-// USB数据缓冲区结构体
-xdata struct UsbBuffer{
-	UINT8 EP0[0x40];	// 端点0 OUT&IN 64byte收发共用缓冲区
-	UINT8 EP1[0x40];	// 端点1 OUT&IN 64byte发送缓冲区
-	UINT8 EP2[0x40];	// 端点2 OUT&IN 64byte发送缓冲区
-	UINT8 EP3[0x80];	// 端点3 OUT&IN 64byte*2接收缓冲区
-} Buffer _at_ 0x0000;
-#define Ep0Buffer Buffer.EP0
-#define Ep1Buffer Buffer.EP1
-#define Ep2Buffer Buffer.EP2
-#define Ep3Buffer Buffer.EP3
-#define Ep4Buffer Buffer.EP4
-
-#define UsbSetupBuf	((PUSB_SETUP_REQ)Ep0Buffer)	// 定义Setup包结构体
-#define USBbReqType	(UsbSetupBuf->bRequestType)
-#define USBbRequest	(UsbSetupBuf->bRequest)
-#define USBwValueL	(UsbSetupBuf->wValueL)
-#define USBwValueH	(UsbSetupBuf->wValueH)
-#define USBwIndexL	(UsbSetupBuf->wIndexL)
-#define USBwIndexH	(UsbSetupBuf->wIndexH)
-#define USBwLengthL	(UsbSetupBuf->wLengthL)
-#define USBwLengthH	(UsbSetupBuf->wLengthH)
-
+// 定义USB数据缓冲区范围
+xdata UsbBuffer Buffer _at_ 0x0000;
 // 定义DMA缓冲区占用标志(0x01缓冲区1收到命令,0x11缓冲区1收到数据; 0x02缓冲区2收到命令,0x22缓冲区2收到数据)
 UINT8 DMA_STATUS = 0;
 
