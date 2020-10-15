@@ -2,7 +2,8 @@ name: Build ProjectCDC
 
 on:
   push:
-    branches: [ master ]
+    paths: 
+      - 'ProjectCDC/MasterTool/**'
 
 jobs:
   build:
