@@ -13,9 +13,7 @@ Header file for CH558 microcontrollers.
 #ifndef __BASE_TYPE__
 #define __BASE_TYPE__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+
 
 /*----- constant and type define -----------------------------------------*/
 
@@ -128,18 +126,14 @@ typedef const unsigned char code      *PUINT8C;
 #define STRUCT_OFFSET( s, m )       ( (UINT8)( & (((s) *)0) -> (m) ) )  /* get the offset address for a member of a structure */
 #endif
 
-#ifdef __cplusplus
-}
-#endif
+
 
 #endif  // __BASE_TYPE__
 
 #ifndef __CH558_H__
 #define __CH558_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+
 
 /*----- SFR --------------------------------------------------------------*/
 /*  sbit are bit addressable, others are byte addressable */
@@ -1183,18 +1177,14 @@ ASM example:
        DJNZ R7,LOOP
 */
 
-#ifdef __cplusplus
-}
-#endif
+
 
 #endif  // __CH558_H__
 
 #ifndef __USB_DEF__
 #define __USB_DEF__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+
 
 /*----- USB constant and structure define --------------------------------*/
 
@@ -1348,15 +1338,15 @@ extern "C" {
 #define MAX_PACKET_SIZE         64      /* maximum packet size */
 #endif
 #ifndef USB_BO_CBW_SIZE
-#define USB_BO_CBW_SIZE			0x1F	/* ÃüÁî¿éCBWµÄ×Ü³¤¶È */
-#define USB_BO_CSW_SIZE			0x0D	/* ÃüÁî×´Ì¬¿éCSWµÄ×Ü³¤¶È */
+#define USB_BO_CBW_SIZE			0x1F	/* ï¿½ï¿½ï¿½ï¿½ï¿½CBWï¿½ï¿½ï¿½Ü³ï¿½ï¿½ï¿½ */
+#define USB_BO_CSW_SIZE			0x0D	/* ï¿½ï¿½ï¿½ï¿½×´Ì¬ï¿½ï¿½CSWï¿½ï¿½ï¿½Ü³ï¿½ï¿½ï¿½ */
 #endif
 #ifndef USB_BO_CBW_SIG0
-#define USB_BO_CBW_SIG0         0x55    /* ÃüÁî¿éCBWÊ¶±ð±êÖ¾'USBC' */
+#define USB_BO_CBW_SIG0         0x55    /* ï¿½ï¿½ï¿½ï¿½ï¿½CBWÊ¶ï¿½ï¿½ï¿½Ö¾'USBC' */
 #define USB_BO_CBW_SIG1         0x53
 #define USB_BO_CBW_SIG2         0x42
 #define USB_BO_CBW_SIG3         0x43
-#define USB_BO_CSW_SIG0         0x55    /* ÃüÁî×´Ì¬¿éCSWÊ¶±ð±êÖ¾'USBS' */
+#define USB_BO_CSW_SIG0         0x55    /* ï¿½ï¿½ï¿½ï¿½×´Ì¬ï¿½ï¿½CSWÊ¶ï¿½ï¿½ï¿½Ö¾'USBS' */
 #define USB_BO_CSW_SIG1         0x53
 #define USB_BO_CSW_SIG2         0x42
 #define USB_BO_CSW_SIG3         0x53
@@ -1513,8 +1503,6 @@ typedef struct _UDISK_BOC_CSW {         /* status of BulkOnly USB-FlashDisk */
 
 typedef UDISK_BOC_CSW xdata *PXUDISK_BOC_CSW;
 
-#ifdef __cplusplus
-}
-#endif
+
 
 #endif  // __USB_DEF__

@@ -13,9 +13,7 @@ Header file for CH559 microcontrollers.
 #ifndef __BASE_TYPE__
 #define __BASE_TYPE__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+
 
 /*----- constant and type define -----------------------------------------*/
 
@@ -128,18 +126,14 @@ typedef const unsigned char code      *PUINT8C;
 #define STRUCT_OFFSET( s, m )       ( (UINT8)( & (((s) *)0) -> (m) ) )  /* get the offset address for a member of a structure */
 #endif
 
-#ifdef __cplusplus
-}
-#endif
+
 
 #endif  // __BASE_TYPE__
 
 #ifndef __CH559_H__
 #define __CH559_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+
 
 /*----- SFR --------------------------------------------------------------*/
 /*  sbit are bit addressable, others are byte addressable */
@@ -1322,18 +1316,14 @@ ASM example:
        DJNZ R7,LOOP
 */
 
-#ifdef __cplusplus
-}
-#endif
+
 
 #endif  // __CH559_H__
 
 #ifndef __USB_DEF__
 #define __USB_DEF__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+
 
 /*----- USB constant and structure define --------------------------------*/
 
@@ -1655,8 +1645,6 @@ typedef struct _UDISK_BOC_CSW {         /* status of BulkOnly USB-FlashDisk */
 
 typedef UDISK_BOC_CSW xdata *PXUDISK_BOC_CSW;
 
-#ifdef __cplusplus
-}
-#endif
+
 
 #endif  // __USB_DEF__
