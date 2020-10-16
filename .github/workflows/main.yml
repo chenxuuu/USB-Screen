@@ -4,6 +4,9 @@ on:
   push:
     paths:
       - 'ProjectCDC/MasterTool/**'
+  pull_request:
+    paths:
+      - 'ProjectCDC/MasterTool/**'
 
 jobs:
   build:
