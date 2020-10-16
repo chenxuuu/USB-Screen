@@ -2,7 +2,7 @@ name: Build ProjectCDC
 
 on:
   push:
-    paths: 
+    paths:
       - 'ProjectCDC/MasterTool/**'
 
 jobs:
@@ -11,8 +11,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Setup MSBuild Path
-        uses: warrenbuckley/Setup-MSBuild@v1
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v1.0.2
       - name: Build
         run: msbuild ProjectCDC/MasterTool/UsbScreen.sln /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=FolderProfile
       - name: Upload Artifact
