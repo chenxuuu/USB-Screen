@@ -152,8 +152,8 @@ void HID_DeviceInterrupt(void) interrupt INT_NO_USB
 					{
 						pDescr = LineCoding;									// 获取数据指针
 						length = sizeof(LineCoding);							// 获取数据长度
-						if (length > USBwLength) length = USBwLength;			// 若数据长度超过上位机的要求,则需要截断分多次发送
-						if (length > EP0SIZE) length = EP0SIZE;					// 若数据长度超过缓冲区尺寸,则需要截断分多次发送
+						if(USBwLength > length) USBwLength = length;			// 若主机要求的数据长度超过报告长度,则上传报告长度
+						length = USBwLength>EP0SIZE ? EP0SIZE : USBwLength;		// 若数据长度超过缓冲区尺寸,则需要截断分多次发送
 						memcpy(Ep0Buffer, pDescr, length);						// 拷贝需要发送的数据
 						USBwLength -= length;									// 减少已经发送的数据长度
 						pDescr += length;										// 数据指针移动到下次需要的位置
@@ -188,8 +188,8 @@ void HID_DeviceInterrupt(void) interrupt INT_NO_USB
 							length = 0xFF;
 							break;
 						}
-						if (length > USBwLength) length = USBwLength;			// 若数据长度超过上位机的要求,则需要截断分多次发送
-						if (length > EP0SIZE) length = EP0SIZE;					// 若数据长度超过缓冲区尺寸,则需要截断分多次发送
+						if(USBwLength > length) USBwLength = length;			// 若主机要求的数据长度超过报告长度,则上传报告长度
+						length = USBwLength>EP0SIZE ? EP0SIZE : USBwLength;		// 若数据长度超过缓冲区尺寸,则需要截断分多次发送
 						memcpy(Ep0Buffer, pDescr, length);						// 拷贝需要发送的数据
 						USBwLength -= length;									// 减少已经发送的数据长度
 						pDescr += length;										// 数据指针移动到下次需要的位置
