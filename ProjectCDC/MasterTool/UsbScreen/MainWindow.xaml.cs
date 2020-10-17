@@ -158,8 +158,7 @@ namespace UsbScreen
 				//	Debug.WriteLine(string.Join(" ", b.Select(i => $"{i:X2}")));
 				//});
 				SendBufferQueue = new ConcurrentQueue<byte[]>();
-				SendBufferQueue.Enqueue(new byte[] { 0xB1, 0x00 });// 进入Bootloader模式命令
-																   //Transceiver(new byte[] { 0xB0 });// 启动数据收发器
+				SendBufferQueue.Enqueue(new byte[] { 0xB1 });// 进入Bootloader模式命令
 			};
 			this.Loaded += delegate
 			{
