@@ -1,0 +1,36 @@
+name: Build firmware
+
+on:
+  push:
+    paths:
+      - 'ProjectCDC/Firmware/**'
+  pull_request:
+    paths:
+      - 'ProjectCDC/Firmware/**'
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Build
+        run: |
+          cd ProjectCDC/firmware
+          Invoke-WebRequest -uri https://github.com/chenxuuu/USB-Screen/releases/download/0.0.0/c51.zip -OutFile c51.zip
+          Expand-Archive -Path c51.zip -DestinationPath ./
+          BIN\C51.exe Freqsys.c "OPTIMIZE (9)"
+          BIN\C51.exe LCD.c "OPTIMIZE (9)"
+          BIN\C51.exe Main.c "OPTIMIZE (9)"
+          BIN\C51.exe SPI.c "OPTIMIZE (9)"
+          BIN\C51.exe UsbManager.c "OPTIMIZE (9)"
+          BIN\LX51.exe Freqsys.OBJ,LCD.OBJ,Main.OBJ,SPI.OBJ,UsbManager.OBJ TO screen
+          BIN\OHx51.exe screen
+          mkdir build
+          mv screen.hex build
+        shell: powershell
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v1.0.0
+        with:
+          name: Firmware
+          path: ProjectCDC/Firmware/build
