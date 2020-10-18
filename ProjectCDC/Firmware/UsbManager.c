@@ -55,12 +55,12 @@ void USB_DeviceInit(void)
 }
 
 /*******************************************************************************
-* Function Name	: HID_DeviceInterrupt
-* Description	: HID中断查询函数
+* Function Name	: USB_DeviceInterrupt
+* Description	: USB中断查询函数
 * Input			: None
 * Return		: None
 *******************************************************************************/
-void HID_DeviceInterrupt(void) interrupt INT_NO_USB
+void USB_DeviceInterrupt(void) interrupt INT_NO_USB
 {
 	static UINT8	UsbConfig;		// USB配置模式位
 
