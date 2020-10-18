@@ -54,92 +54,85 @@ sbit IAP_LED = P3^4;
 * Return		:	返回操作结果代码
 					0x00操作成功；0x02操作错误；0x40地址错误；0xDE数据长度错误；0xFF校验错误；0xE0未知命令
 *******************************************************************************/
-void FlashCoding(PUINT8XV p){
-	UINT8	Length;									// 缓存数据长度
-	UINT8	ReCode;									// 定义返回代码
+UINT8 FlashCoding(){
+	UINT8	Length;								// 缓存数据长度
+	UINT8	i;									// 定义循环变量
 
-	XBUS_AUX |= bDPTR_AUTO_INC;						// 使能MOVX_@DPTR指令执行后DPTR自动INC
-	ReCode = 0;
-	ROM_ADDR_H = *p;								// 获取操作命令
-	Length	= *p;									// 获取数据长度
-	if(Length > 60)									// 校验数据长度(不能超过60byte,因为缓冲区仅64byte)
+	Length	= Ep2Buffer[0x41];					// 获取数据长度
+	if(Length > 60) return 0xDE;				// 校验数据长度(不能超过60byte,因为缓冲区仅64byte)
+	switch(Ep2Buffer[0x40])						// 分析操作命令
 	{
-		ReCode = 0xDE;
-	}
-	else
-	{
-		switch(ROM_ADDR_H)							// 分析操作命令
+		case 0x81:								// CodeFlash擦除命令(CH551-554系列不需要擦除Flash,这里直接跳过)
 		{
-			case 0x81:								// CodeFlash擦除命令(CH551-554系列不需要擦除Flash,这里直接跳过)
+			break;
+		}
+		case 0x82:								// CodeFlash写入命令
+		{
+			// 关闭Flash写保护
+			SAFE_MOD 	= 0x55;
+			SAFE_MOD 	= 0xAA;
+			GLOBAL_CFG	|= bCODE_WE | bDATA_WE;
+			// 设置CodeFlash操作地址
+			ROM_ADDR_L	= Ep2Buffer[0x42];		// 写入地址低位
+			ROM_ADDR_H	= Ep2Buffer[0x43];		// 写入地址高位
+			// 分析操作地址是否符合要求(程序自我保护,防止被自我覆写)
+			if (ROM_ADDR_H >= MSB(IAP_CODE_ADDR)) return 0x40;
+			// 写入CodeFlash数据
+			for(i=0; i<Length;i+=2)
 			{
-				break;
-			}
-			case 0x82:								// CodeFlash写入命令
-			{
-				// 关闭Flash写保护
-				SAFE_MOD 	= 0x55;
-				SAFE_MOD 	= 0xAA;
-				GLOBAL_CFG	|= bCODE_WE | bDATA_WE;
-				// 设置CodeFlash操作地址
-				ROM_ADDR_L	= *p;					// 写入地址低位
-				ROM_ADDR_H	= *p;					// 写入地址高位
-				do
+				ROM_DATA_L	= Ep2Buffer[0x44+i];// 写入数据低位
+				ROM_DATA_H	= Ep2Buffer[0x45+i];// 写入数据高位
+				ROM_CTRL	= ROM_CMD_PROG;		// 执行CodeFlash写入操作
+				if(ROM_STATUS_RECODE)			// 检查操作结果
 				{
-					ROM_DATA_L	= *p;				// 写入数据低位
-					ROM_DATA_H	= *p;				// 写入数据高位
-					ROM_CTRL	= ROM_CMD_PROG;		// 执行CodeFlash写入操作
-					if(ROM_STATUS_RECODE)			// 检查操作结果
-					{
-						ReCode = ROM_STATUS_RECODE;	// 返回错误代码(0x40地址无效;0x02写入失败)
-						break;
-					}
-					ROM_ADDR += 2;
-					Length -= 2;
-				} while (Length);
-				break;
+					return ROM_STATUS_RECODE;	// 返回错误代码(0x40地址无效;0x02写入失败)
+				}
+				ROM_ADDR	+= 2;				// 写入成功后地址+2
 			}
-			case 0x83:								// 校验CodeFlash命令
+			// 启用Flash写保护
+			SAFE_MOD	= 0x55;
+			SAFE_MOD	= 0xAA;
+			GLOBAL_CFG	&= ~(bCODE_WE | bDATA_WE);
+			break;
+		}
+		case 0x83:								// 校验CodeFlash命令
+		{
+			ROM_ADDR_L	= Ep2Buffer[0x42];		// 写入地址低位
+			ROM_ADDR_H	= Ep2Buffer[0x43];		// 写入地址高位
+			for(i=0; i<Length; ++i)
 			{
-				ROM_ADDR_L	= *p;					// 写入地址低位
-				ROM_ADDR_H	= *p;					// 写入地址高位
-				do
+				if(Ep2Buffer[0x44+i] != *(PUINT8C)ROM_ADDR)
 				{
-					if(*p != *(PUINT8C)ROM_ADDR)
-					{
-						ReCode = 0xFF;
-						break;
-					}
-					++ROM_ADDR;
-				} while (--Length);
-				break;
+					return 0xFF;
+				}
+				++ROM_ADDR;
 			}
-			case 0x1B:								// 重启命令[LoadBoot],重启并进入用户程序
-			{
-				SAFE_MOD = 0x55;
-				SAFE_MOD = 0xAA;
-				GLOBAL_CFG |= bSW_RESET;
-				break;
-			}
-			case 0x1D:								// 校验ID加密
-			{
-				*p = CHIP_ID;						// 读芯片型号,命名规则CH5xx(这里获取后两位)
-				*p = 0x00;
-				*p = ChipIdData0;
-				*p = ChipIdData1;
-				*p = ChipIdData2;
-				*p = ChipIdData3;
-				*p = ChipIdData4;
-				*p = ChipIdData5;
-				break;
-			}
-			default:								// 未知命令[Error]
-			{
-				ReCode = 0xE0;
-			}
+			break;
+		}
+		case 0x1B:								// 重启命令[LoadBoot],重启并进入用户程序
+		{
+			SAFE_MOD = 0x55;
+			SAFE_MOD = 0xAA;
+			GLOBAL_CFG |= bSW_RESET;
+			break;
+		}
+		case 0x1D:								// 校验ID加密
+		{
+			Ep2Buffer[0x42] = CHIP_ID;			// 读芯片型号,命名规则CH5xx(这里获取后两位)
+			Ep2Buffer[0x44] = ChipIdData0;
+			Ep2Buffer[0x45] = ChipIdData1;
+			Ep2Buffer[0x46] = ChipIdData2;
+			Ep2Buffer[0x47] = ChipIdData3;
+			Ep2Buffer[0x48] = ChipIdData4;
+			Ep2Buffer[0x49] = ChipIdData5;
+			break;
+		}
+		default:								// 未知命令[Error]
+		{
+			return 0xE0;
 		}
 	}
-	XBUS_AUX &= ~bDPTR_AUTO_INC;					// 禁用MOVX_@DPTR指令执行后DPTR自动INC
-	Ep2Buffer[1] = ReCode;
+	return 0x00;
 }
 
 /*******************************************************************************
@@ -196,8 +189,8 @@ void USB_DeviceInterrupt(void)
 		switch (USB_INT_ST & (MASK_UIS_TOKEN | MASK_UIS_ENDP)) {				// 判断此次中断是由哪个端点发起的
 		case UIS_TOKEN_OUT | 2:													// 端点2 下传
 			if (U_TOG_OK == 0) break;
-			FlashCoding((PUINT8X)UEP2_DMA);
-			memcpy(Ep2Buffer+0x40, Ep2Buffer, 64);								// 反馈命令结果
+			memcpy(Ep2Buffer+0x40, Ep2Buffer, USB_RX_LEN);						// 转存数据
+			Ep2Buffer[0x41] = FlashCoding();									// 处理收到的数据
 			UEP2_T_LEN = USB_RX_LEN;
 			UEP2_CTRL = UEP2_CTRL & ~ MASK_UEP_T_RES | UEP_T_RES_ACK;			// 有数据时上传数据并应答ACK
 			break;

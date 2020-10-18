@@ -39,7 +39,7 @@ namespace UsbScreen
 		/// <summary>
 		/// 缓存固件数据
 		/// </summary>
-		public static List<byte[]> Firmware { get; set; }
+		public static ConcurrentQueue<byte[]> Firmware = new ConcurrentQueue<byte[]>();
 		/// <summary>
 		/// 数据发送缓冲队列
 		/// </summary>
@@ -146,19 +146,35 @@ namespace UsbScreen
 			// 更新固件
 			LoadHex.Click += delegate
 			{
+				if (serialport.IsOpen)
+				{
+					MessageBox.Show("请等待当前传输完成后再试!");
+					return;
+				}
 				OpenFileDialog FileLoader = new OpenFileDialog()
 				{
 					Filter = "固件文件|*.hex"
 				};
 				if (FileLoader.ShowDialog() == false) return;
-				Firmware = HexToBin(FileLoader.FileName);
+				Firmware = new ConcurrentQueue<byte[]>();
+				HexToBin(FileLoader.FileName).ForEach(b => Firmware.Enqueue(b));
 				// 输出转译后的固件数据,调试使用
 				//Firmware.ForEach(b =>
 				//{
 				//	Debug.WriteLine(string.Join(" ", b.Select(i => $"{i:X2}")));
 				//});
-				SendBufferQueue = new ConcurrentQueue<byte[]>();
-				SendBufferQueue.Enqueue(new byte[] { 0xB1 });// 进入Bootloader模式命令
+				try
+				{
+					serialport.PortName = DeviceComboBox.Text;
+					serialport.Open();
+					serialport.Write(new byte[] { 0xB1 }, 0, 1);    // 进入Bootloader模式命令
+					SysPanel.IsEnabled = false;
+					serialport.Close();
+				}
+				catch (Exception e)
+				{
+					Debug.Print(e.Message);
+				}
 			};
 			this.Loaded += delegate
 			{
@@ -277,7 +293,7 @@ namespace UsbScreen
 		}
 
 		/// <summary>
-		/// 获取HID设备列表
+		/// 获取串口设备列表
 		/// </summary>
 		private void GetDeviceList()
 		{
@@ -289,9 +305,13 @@ namespace UsbScreen
 				{
 					foreach (ManagementObject Entity in searcher.Get())
 					{
-						if ((Entity["PNPDeviceID"] as string).EndsWith("ST1E6DIPSF0F0SPI3"))    // 筛选目标设备
+						if ((Entity["PNPDeviceID"] as string).EndsWith("ST1E6DIPSF0F0SPI3"))            // 筛选目标设备
 						{
 							SerialPorts.Add(Entity["DeviceID"] as string);
+						}
+						else if ((Entity["PNPDeviceID"] as string).EndsWith("ST1E6DIPSF0F0SPI3ISP"))    // 筛选ISP设备
+						{
+							UpdateFirmware(Entity["DeviceID"] as string);
 						}
 					}
 				}
@@ -316,7 +336,148 @@ namespace UsbScreen
 			});
 		}
 
+		/// <summary>
+		/// 固件更新(必须符合:PNPDeviceID=ST1E6DIPSF0F0SPI3ISP)
+		/// </summary>
+		/// <param name="DeviceID">串口号</param>
+		public void UpdateFirmware(string DeviceID)
+		{
+			SerialPort upgradePort = new SerialPort()
+			{
+				PortName = DeviceID
+			};
+			if (Firmware.IsEmpty)
+			{
+				OpenFileDialog FileLoader = new OpenFileDialog()
+				{
+					Filter = "固件文件|*.hex"
+				};
+				if (FileLoader.ShowDialog() == false) return;
+				HexToBin(FileLoader.FileName).ForEach(b => Firmware.Enqueue(b));
+			}
+			upgradePort.Open();
+			if (Firmware.IsEmpty)
+			{
+				try
+				{
+					upgradePort.Write(new byte[] { 0x1B, 0x00 }, 0, 2);
+					upgradePort.Close();
+				}
+				catch (Exception e)
+				{
+					this.Dispatcher.Invoke((Action)delegate { SysPanel.IsEnabled = true; });
+					Debug.Print(e.Message);
+				}
+				return;
+			}
 
+			this.Dispatcher.Invoke((Action)delegate
+			{
+				progress.Maximum = Firmware.Count;
+				progress.Value = 0;
+			});
+			upgradePort.DataReceived += UpgradePort_DataReceived;
+			if (Firmware.TryDequeue(out byte[] result))
+			{
+				try
+				{
+					upgradePort.Write(result, 0, result.Length);
+					this.Dispatcher.Invoke((Action)delegate
+					{
+						++progress.Value;
+						if (progress.Value == progress.Maximum) progress.Value = 0;
+					});
+				}
+				catch (Exception e)
+				{
+					Firmware = new ConcurrentQueue<byte[]>();
+					this.Dispatcher.Invoke((Action)delegate { SysPanel.IsEnabled = true; });
+					Debug.Print($"{DateTime.Now:HH:mm:ss.fff} [传输失败] {e.Message}");
+					return;
+				}
+			}
+		}
+
+		private void UpgradePort_DataReceived(object sender, SerialDataReceivedEventArgs e)
+		{
+			SerialPort upgradePort = (SerialPort)sender;
+			if (upgradePort.BytesToRead == 0) return;                       // 忽略零长度数据包
+			byte[] recvData = new byte[upgradePort.BytesToRead];
+			upgradePort.Read(recvData, 0, upgradePort.BytesToRead);
+			DebugPrint(string.Join(" ", recvData.Select(d => $"{d:X2}")));  // 打印收到的数据,调试使用
+			if (ResultCommand(recvData[1]))
+			{
+				if (Firmware.TryDequeue(out byte[] result))
+				{
+					try
+					{
+						upgradePort.Write(result, 0, result.Length);
+						this.Dispatcher.Invoke((Action)delegate
+						{
+							++progress.Value;
+							if (progress.Value == progress.Maximum) progress.Value = 0;
+						});
+					}
+					catch (Exception err)
+					{
+						Firmware = new ConcurrentQueue<byte[]>();
+						Debug.Print($"{DateTime.Now:HH:mm:ss.fff} [传输失败] {err.Message}");
+						return;
+					}
+				}
+			}
+			else
+			{
+				Firmware = new ConcurrentQueue<byte[]>();
+			}
+			if (Firmware.IsEmpty)
+			{
+				this.Dispatcher.Invoke((Action)delegate
+				{
+					SysPanel.IsEnabled = true;
+				});
+				upgradePort.DataReceived -= UpgradePort_DataReceived;
+			}
+		}
+		/// <summary>
+		/// 命令操作结果判断
+		/// </summary>
+		private bool ResultCommand(byte ReCode)
+		{
+			switch (ReCode)
+			{
+				case 0x00:  // 操作成功
+					return true;
+				case 0x01:
+					DebugPrint("[任务中止] 操作超时");
+					break;
+				case 0x02:
+					DebugPrint("[任务中止] 操作出错");
+					break;
+				case 0x1D:
+					DebugPrint("[任务中止] 设备唯一ID码校验失败");
+					break;
+				case 0x40:
+					DebugPrint("[任务中止] 地址无效");
+					break;
+				case 0x42:
+					DebugPrint("[任务中止] Flash编程地址无效");
+					break;
+				case 0xDE:
+					DebugPrint("[任务中止] 数据长度错误");
+					break;
+				case 0xE0:
+					DebugPrint("[任务中止] 命令无效");
+					break;
+				case 0xFF:
+					DebugPrint("[任务中止] 数据校验失败");
+					break;
+				default:
+					DebugPrint("[任务中止] 未知错误");
+					break;
+			}
+			return false;
+		}
 		/// <summary>
 		/// 转化Hex文件为Bin数据
 		/// </summary>
