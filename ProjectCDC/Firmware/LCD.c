@@ -157,7 +157,7 @@ void LCD_SET(PUINT8XV p)
 	else	// {1b数据长度，1b列开始地址，1b列结束地址，1b行开始地址，1b行结束地址，n*2byte数据(数据长度必须为偶数)}
 	{
 		len = *p;
-		if(len&0x40 == 0)	// len^6=1 时,当成纯数据包处理
+		if((len&0x40) == 0)	// len^6=1 时,当成纯数据包处理
 		{
 			// 列地址设置(0-239)，高位在前
 			while(S0_FREE==0); SPI_DC=0; SPI0_DATA=0x2A;
@@ -173,11 +173,12 @@ void LCD_SET(PUINT8XV p)
 			while(S0_FREE==0); SPI0_DATA = ROM_DATA_L;
 			// 写LCD数据命令
 			while(S0_FREE==0); SPI_DC=0; SPI0_DATA=0x2C; ROM_DATA_L=*p;
+			// 读色彩模式命令
+			mode = len&0x80;
+			while(S0_FREE==0); SPI_DC=1;
 		}
-		// 读色彩模式命令
-		mode = len&0x80;
+		else ROM_DATA_L=*p;
 		len &= 0x3F;
-		while(S0_FREE==0); SPI_DC=1;
 		// 写LCD数据内容
 		if(mode==0x00)
 		{
