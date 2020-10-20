@@ -26,8 +26,10 @@ namespace UsbScreen
         {
             InitializeComponent();
             var s = new SerialScreen();
-            s.Connect(SerialScreen.GetDeviceList()[0]);
-            s.Show(new Bitmap(@"C:\Users\chenx\Desktop\1.png"),10,10,true);
+            if (!s.Connect(SerialScreen.GetDeviceList()[0]))
+                MessageBox.Show("connect error");
+            if (!s.Show(new Bitmap(@"1.png"),50,50,true))
+                MessageBox.Show("show error");
         }
     }
 }

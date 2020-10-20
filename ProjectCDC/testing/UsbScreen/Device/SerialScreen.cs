@@ -154,7 +154,9 @@ namespace UsbScreen
             }
             try
             {
-                Debug.WriteLine($"{len},{BitConverter.ToString(d)}");
+#if DEBUG
+                Debug.WriteLine($"[uart send]{len},{BitConverter.ToString(d)}");
+#endif
                 sp.Write(d, start, len);
                 return true;
             }
@@ -238,6 +240,7 @@ namespace UsbScreen
             {
                 if ((ex + 1 - x) * (ey + 1 - y) % 8 != 0)//不是8的倍数像素点
                 {
+                    Debug.WriteLine("pic need to cut");
                     ex = ex - (ex + 1 - x) % 8;
                     tx = (ex - x + 1);
                     if (ex - x == -1)//没啥可显示的
@@ -260,7 +263,7 @@ namespace UsbScreen
                             var p = i * 8 + j;//到哪个点了
                             var c = pic.GetPixel(p % tx, p / tx);
                             if (0.3 * c.R + 0.59 * c.G + 0.11 * c.B > 128)//黑色
-                                data[5 + i] |= (byte)(1 << (8 - j));
+                                data[5 + i] |= (byte)(1 << (7 - j));
                         }
                     }
                     return sendBytes(data, 0, tx * ty / 8 + 5);
@@ -268,7 +271,7 @@ namespace UsbScreen
                 else//要分开发的
                 {
                     //第一包，带设置参数
-                    data[0] = 63 - 5;
+                    data[0] = (63 - 5) | 0x80;
                     for (int i = 0; i < 63 - 5; i++)
                     {
                         data[5 + i] = 0;
@@ -277,10 +280,10 @@ namespace UsbScreen
                             var p = i * 8 + j;//到哪个点了
                             var c = pic.GetPixel(p % tx, p / tx);
                             if (0.3 * c.R + 0.59 * c.G + 0.11 * c.B > 128)//黑色
-                                data[5 + i] |= (byte)(1 << (8 - j));
+                                data[5 + i] |= (byte)(1 << (7 - j));
                         }
                     }
-                    if (!sendBytes(data, 0, data[0] + 5))
+                    if (!sendBytes(data, 0, 63))
                         return false;
                     int sent = (63 - 5) * 8;//已发送的像素个数
                     while (tx * ty - sent >= 64 * 8)//直到发到少于64字节
@@ -290,10 +293,10 @@ namespace UsbScreen
                             data[i] = 0;
                             for (int j = 0; j < 8; j++)
                             {
-                                var p = i * 8 + j;//到哪个点了
+                                var p = i * 8 + j + sent;//到哪个点了
                                 var c = pic.GetPixel(p % tx, p / tx);
                                 if (0.3 * c.R + 0.59 * c.G + 0.11 * c.B > 128)//黑色
-                                    data[i] |= (byte)(1 << (8 - j));
+                                    data[i] |= (byte)(1 << (7 - j));
                             }
                         }
                         if (!sendBytes(data, 0, 64))
@@ -307,10 +310,10 @@ namespace UsbScreen
                         data[i + 1] = 0;
                         for (int j = 0; j < 8; j++)
                         {
-                            var p = i * 8 + j;//到哪个点了
+                            var p = i * 8 + j + sent;//到哪个点了
                             var c = pic.GetPixel(p % tx, p / tx);
                             if (0.3 * c.R + 0.59 * c.G + 0.11 * c.B > 128)//黑色
-                                data[i + 1] |= (byte)(1 << (8 - j));
+                                data[i + 1] |= (byte)(1 << (7 - j));
                         }
                     }
                     if (!sendBytes(data, 0, (data[0] & 0x3f) + 1))
