@@ -46,10 +46,7 @@ namespace UsbScreen.Models
                 IsConnected = sp.IsOpen;
                 return _connected;
             }
-            set
-            {
-                _connected = value;
-            }
+            set => _connected = value;
         }
 
         /// <summary>
@@ -57,14 +54,8 @@ namespace UsbScreen.Models
         /// </summary>
         public string Name
         {
-            get
-            {
-                return sp.PortName;
-            }
-            set
-            {
-                sp.PortName = value;
-            }
+            get => sp.PortName;
+            set => sp.PortName = value;
         }
 
         /// <summary>
@@ -93,10 +84,10 @@ namespace UsbScreen.Models
             {
                 try
                 {
-                    devices = (from ManagementObject Entity in searcher.Get()
-                               where (Entity["PNPDeviceID"] as string).EndsWith("ST1E6DIPSF0F0SPI3") ||
-                               isp && (Entity["PNPDeviceID"] as string).EndsWith("ST1E6DIPSF0F0SPI3ISP")
-                               select Entity["DeviceID"] as string).ToArray();
+                    devices = (from ManagementObject entity in searcher.Get()
+                               where ((string) entity["PNPDeviceID"]).EndsWith("ST1E6DIPSF0F0SPI3") ||
+                               isp && ((string) entity["PNPDeviceID"]).EndsWith("ST1E6DIPSF0F0SPI3ISP")
+                               select entity["DeviceID"] as string).ToArray();
                 }
                 catch (Exception e)
                 {
@@ -159,12 +150,13 @@ namespace UsbScreen.Models
         /// <param name="start"></param>
         /// <param name="len"></param>
         /// <returns></returns>
-        private bool sendBytes(byte[] d, int start, int len)
+        private bool SendBytes(byte[] d, int start, int len)
         {
             if (!IsConnected)
             {
-                Debug.WriteLine("not connected");
-                return false;
+                Debug.WriteLine("not connected, try reconnect");
+                if(!Connect())
+                    return false;
             }
             try
             {
@@ -212,7 +204,7 @@ namespace UsbScreen.Models
                         data[5 + i * 2] = (byte)((c.R >> 3 << 3) + (c.G >> 5));
                         data[6 + i * 2] = (byte)(((c.G >> 2) % 0x1000 << 5) + (c.B >> 3));
                     }
-                    return sendBytes(data, 0, data[0] + 5);
+                    return SendBytes(data, 0, data[0] + 5);
                 }
                 else//要分开发的
                 {
@@ -224,7 +216,7 @@ namespace UsbScreen.Models
                         data[5 + i * 2] = (byte)((c.R >> 3 << 3) + (c.G >> 5));
                         data[6 + i * 2] = (byte)(((c.G >> 2) % 0x1000 << 5) + (c.B >> 3));
                     }
-                    if (!sendBytes(data, 0, data[0] + 5))
+                    if (!SendBytes(data, 0, data[0] + 5))
                         return false;
                     int sent = (63 - 5) / 2;//已发送的像素个数
                     while (tx * ty - sent >= 64 / 2)//直到发到少于64字节
@@ -235,7 +227,7 @@ namespace UsbScreen.Models
                             data[i * 2] = (byte)((c.R >> 3 << 3) + (c.G >> 5));
                             data[i * 2 + 1] = (byte)(((c.G >> 2) % 0x1000 << 5) + (c.B >> 3));
                         }
-                        if (!sendBytes(data, 0, 64))
+                        if (!SendBytes(data, 0, 64))
                             return false;
                         sent += 64 / 2;
                     }
@@ -247,7 +239,7 @@ namespace UsbScreen.Models
                         data[i * 2 + 1] = (byte)((c.R >> 3 << 3) + (c.G >> 5));
                         data[i * 2 + 2] = (byte)(((c.G >> 2) % 0x1000 << 5) + (c.B >> 3));
                     }
-                    if (!sendBytes(data, 0, (data[0] & 0x3f) + 1))
+                    if (!SendBytes(data, 0, (data[0] & 0x3f) + 1))
                         return false;
                 }
             }
@@ -281,7 +273,7 @@ namespace UsbScreen.Models
                                 data[5 + i] |= (byte)(1 << 7 - j);
                         }
                     }
-                    return sendBytes(data, 0, tx * ty / 8 + 5);
+                    return SendBytes(data, 0, tx * ty / 8 + 5);
                 }
                 else//要分开发的
                 {
@@ -298,7 +290,7 @@ namespace UsbScreen.Models
                                 data[5 + i] |= (byte)(1 << 7 - j);
                         }
                     }
-                    if (!sendBytes(data, 0, 63))
+                    if (!SendBytes(data, 0, 63))
                         return false;
                     int sent = (63 - 5) * 8;//已发送的像素个数
                     while (tx * ty - sent >= 64 * 8)//直到发到少于64字节
@@ -314,7 +306,7 @@ namespace UsbScreen.Models
                                     data[i] |= (byte)(1 << 7 - j);
                             }
                         }
-                        if (!sendBytes(data, 0, 64))
+                        if (!SendBytes(data, 0, 64))
                             return false;
                         sent += 64 * 8;
                     }
@@ -331,7 +323,7 @@ namespace UsbScreen.Models
                                 data[i + 1] |= (byte)(1 << 7 - j);
                         }
                     }
-                    if (!sendBytes(data, 0, (data[0] & 0x3f) + 1))
+                    if (!SendBytes(data, 0, (data[0] & 0x3f) + 1))
                         return false;
                 }
             }

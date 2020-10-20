@@ -24,12 +24,10 @@ namespace UsbScreen
     /// </summary>
     public partial class MainWindow : Window
     {
-
-        SerialScreen s = new SerialScreen();
+        readonly SerialScreen s = new SerialScreen();
         public MainWindow()
         {
             InitializeComponent();
-            ShowPicture(new Bitmap("1.png"));
         }
 
         private void testButton_Click(object sender, RoutedEventArgs e)
@@ -37,14 +35,14 @@ namespace UsbScreen
             if (!s.Connect(SerialScreen.GetDeviceList()[0]))
                 MessageBox.Show("connect error");
             Stopwatch sw = new Stopwatch();
-            Bitmap CatchBmp = new Bitmap(240, 240);
-            Graphics g = Graphics.FromImage(CatchBmp);
+            Bitmap catchBmp = new Bitmap(240, 240);
+            Graphics g = Graphics.FromImage(catchBmp);
 
             while (true)
             {
                 g.CopyFromScreen(new Point(0, 0), new Point(0, 0), new System.Drawing.Size(240, 240));
                 sw.Start();
-                if (!s.Show(CatchBmp, 0, 0))
+                if (!s.Show(catchBmp, 0, 0))
                 {
                     MessageBox.Show("show error");
                     break;
@@ -79,24 +77,38 @@ namespace UsbScreen
                 MessageBox.Show("connect error");
             Stopwatch sw = new Stopwatch();
             Bitmap p1 = new Bitmap("1.png");
-            Bitmap p2 = new Bitmap("2.png");
 
-            bool last = false;
-            while (true)
+            if (!s.Show(p1, 100, 100, false))
             {
-                sw.Start();
-                if (!s.Show(last ? p1 : p2, 100, 100,false))
-                {
-                    MessageBox.Show("show error");
-                    break;
-                }
-                ShowPicture(s.Priview);
-                break;
-                sw.Stop();
-                Debug.Print($"{DateTime.Now:HH:mm:ss.fff} [传输完成] 耗时:{sw.ElapsedMilliseconds}ms");
-                sw.Restart();
-                last = !last;
+                MessageBox.Show("show error");
+                return;
             }
+            ShowPicture(s.Priview);
+        }
+
+        private void MainWindow_OnLoaded(object sender, RoutedEventArgs e)
+        {
+            ShowPicture(s.Priview);
+            PortComboBox.ItemsSource = SerialScreen.GetDeviceList();
+            ConnectButton.DataContext = s;
+        }
+
+        /// <summary>
+        /// 连接、断开设备
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ConnectButton_OnClick(object sender, RoutedEventArgs e)
+        {
+            if (s.IsConnected)
+            {
+                s.Disconnect();
+                return;
+            }
+            if (PortComboBox.SelectedItem == null)
+                return;
+            if(((string)PortComboBox.SelectedItem).Length > 0)
+                s.Connect((string)PortComboBox.SelectedItem);
         }
     }
 }

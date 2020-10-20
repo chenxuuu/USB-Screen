@@ -6,13 +6,34 @@
         xmlns:local="clr-namespace:UsbScreen"
         mc:Ignorable="d"
         WindowStartupLocation="CenterScreen"
-        Title="MainWindow" Height="270" Width="480" >
+        Title="MainWindow" Height="270" Width="480"
+        Loaded="MainWindow_OnLoaded">
+    <Window.Resources>
+        <local:ConnectOrDisconnect x:Key="ConnectOrDisconnectConverter"/>
+    </Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
         <Image Name="PriviewImage"/>
-        <Button Content="t" Grid.Column="1" Click="testpicButton_Click"/>
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <StackPanel Orientation="Horizontal" Margin="0,2">
+                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,0,0,0">设备：</TextBlock>
+                <ComboBox Name="PortComboBox" Width="130" Margin="3,0"></ComboBox>
+                <Button Name="ConnectButton" Margin="3,0" Width="50" Click="ConnectButton_OnClick" Content="{Binding IsConnected,Converter={StaticResource ConnectOrDisconnectConverter}}"/>
+            </StackPanel>
+        </Grid>
     </Grid>
 </Window>
