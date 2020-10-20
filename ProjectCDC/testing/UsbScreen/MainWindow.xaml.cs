@@ -14,6 +14,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using UsbScreen.Models;
 
 namespace UsbScreen
 {
@@ -22,14 +23,33 @@ namespace UsbScreen
     /// </summary>
     public partial class MainWindow : Window
     {
+
+        SerialScreen s = new SerialScreen();
         public MainWindow()
         {
             InitializeComponent();
-            var s = new SerialScreen();
+            testTextBlock.DataContext = s;
             if (!s.Connect(SerialScreen.GetDeviceList()[0]))
                 MessageBox.Show("connect error");
-            if (!s.Show(new Bitmap(@"1.png"),50,50,true))
-                MessageBox.Show("show error");
+        }
+
+        private void testButton_Click(object sender, RoutedEventArgs e)
+        {
+            Random r = new Random();
+            Stopwatch sw = new Stopwatch();
+            while (true)
+            {
+                sw.Start();
+                if (!s.Show(new Bitmap(@"1.png"), r.Next(0, 200), r.Next(0, 200)))
+                {
+                    MessageBox.Show("show error");
+                    break;
+                }
+                break;
+                sw.Stop();
+                Debug.Print($"{DateTime.Now:HH:mm:ss.fff} [传输完成] 耗时:{sw.ElapsedMilliseconds}ms");
+                sw.Restart();
+            }
         }
     }
 }

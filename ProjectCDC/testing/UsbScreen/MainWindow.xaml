@@ -1,4 +1,4 @@
-﻿<Window x:Class="UsbScreen.MainWindow"
+<Window x:Class="UsbScreen.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -6,7 +6,8 @@
         xmlns:local="clr-namespace:UsbScreen"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
-    <Grid>
-        
-    </Grid>
+    <StackPanel>
+        <TextBlock x:Name="testTextBlock" Text="{Binding Connected}"/>
+        <Button x:Name="testButton" Content="test" Click="testButton_Click"/>
+    </StackPanel>
 </Window>
