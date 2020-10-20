@@ -7,6 +7,7 @@ using System.Linq;
 using System.Management;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Windows;
 using System.Windows.Media.Imaging;
 
 namespace UsbScreen.Models
@@ -27,6 +28,12 @@ namespace UsbScreen.Models
         /// 串口对象
         /// </summary>
         private SerialPort sp { get; set; } = new SerialPort();
+
+        /// <summary>
+        /// 预览图
+        /// </summary>
+        public Bitmap Priview { get; set; }
+        private Graphics PriviewG;
 
         private bool _connected = false;
         /// <summary>
@@ -69,6 +76,9 @@ namespace UsbScreen.Models
             sp.PinChanged += (sender, e) => { _ = IsConnected; };
             if (name.Length > 0)
                 Connect(name);
+            Priview = new Bitmap(width, height);
+            PriviewG = Graphics.FromImage(Priview);
+            PriviewG.FillRectangle(Brushes.Black, 0, 0, width, height);
         }
 
         /// <summary>
@@ -186,6 +196,8 @@ namespace UsbScreen.Models
             int ey = (pic.Height + y > height ? height : pic.Height + y) - 1;
             //处理后的长宽
             int tx = ex - x + 1, ty = ey - y + 1;
+            //更新预览图
+            PriviewG.DrawImage(pic,x,y);
             if (!tc)//彩色图片
             {
                 //待发送数据

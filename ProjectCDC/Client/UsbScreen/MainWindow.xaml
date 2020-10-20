@@ -5,9 +5,14 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:UsbScreen"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <StackPanel>
-        <TextBlock x:Name="testTextBlock" Text="{Binding Connected}"/>
-        <Button x:Name="testButton" Content="test" Click="testButton_Click"/>
-    </StackPanel>
+        WindowStartupLocation="CenterScreen"
+        Title="MainWindow" Height="270" Width="480" >
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Image Name="PriviewImage"/>
+        <Button Content="t" Grid.Column="1" Click="testpicButton_Click"/>
+    </Grid>
 </Window>
