@@ -32,11 +32,11 @@ namespace UsbScreen.Models
         /// <summary>
         /// 串口连接状态
         /// </summary>
-        public bool Connected
+        public bool IsConnected
         {
             get
             {
-                Connected = sp.IsOpen;
+                IsConnected = sp.IsOpen;
                 return _connected;
             }
             set
@@ -66,7 +66,7 @@ namespace UsbScreen.Models
         /// <param name="name">串口名</param>
         public SerialScreen(string name = "")
         {
-            sp.PinChanged += (sender, e) => { _ = Connected; };
+            sp.PinChanged += (sender, e) => { _ = IsConnected; };
             if (name.Length > 0)
                 Connect(name);
         }
@@ -104,19 +104,19 @@ namespace UsbScreen.Models
         /// <returns>是否成功连接</returns>
         public bool Connect(string name = null)
         {
-            if (Connected)//已经连上了
+            if (IsConnected)//已经连上了
                 return true;
             if (name != null)//配置串口名
                 Name = name;
             try
             {
                 sp.Open();
-                _ = Connected;
+                _ = IsConnected;
                 return true;
             }
             catch
             {
-                _ = Connected;
+                _ = IsConnected;
                 return false;
             }
         }
@@ -127,17 +127,17 @@ namespace UsbScreen.Models
         /// <returns>是否成功断开</returns>
         public bool Disconnect()
         {
-            if (!Connected)//已经连上了
+            if (!IsConnected)//已经连上了
                 return true;
             try
             {
                 sp.Close();
-                _ = Connected;
+                _ = IsConnected;
                 return true;
             }
             catch
             {
-                _ = Connected;
+                _ = IsConnected;
                 return false;
             }
         }
@@ -151,7 +151,7 @@ namespace UsbScreen.Models
         /// <returns></returns>
         private bool sendBytes(byte[] d, int start, int len)
         {
-            if (!Connected)
+            if (!IsConnected)
             {
                 Debug.WriteLine("not connected");
                 return false;
@@ -159,12 +159,12 @@ namespace UsbScreen.Models
             try
             {
                 sp.Write(d, start, len);
-                _ = Connected;
+                _ = IsConnected;
                 return true;
             }
             catch
             {
-                _ = Connected;
+                _ = IsConnected;
                 return false;
             }
         }

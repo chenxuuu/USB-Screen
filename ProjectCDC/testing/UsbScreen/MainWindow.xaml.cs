@@ -15,6 +15,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using UsbScreen.Models;
+using Point = System.Drawing.Point;
 
 namespace UsbScreen
 {
@@ -29,23 +30,26 @@ namespace UsbScreen
         {
             InitializeComponent();
             testTextBlock.DataContext = s;
-            if (!s.Connect(SerialScreen.GetDeviceList()[0]))
-                MessageBox.Show("connect error");
         }
 
         private void testButton_Click(object sender, RoutedEventArgs e)
         {
-            Random r = new Random();
+            if (!s.Connect(SerialScreen.GetDeviceList()[0]))
+                MessageBox.Show("connect error");
             Stopwatch sw = new Stopwatch();
+            Bitmap CatchBmp = new Bitmap(240, 240);
+            Graphics g = Graphics.FromImage(CatchBmp);
+
             while (true)
             {
+                g.CopyFromScreen(new Point(0, 0), new Point(0, 0), new System.Drawing.Size(240, 240));
                 sw.Start();
-                if (!s.Show(new Bitmap(@"1.png"), r.Next(0, 200), r.Next(0, 200)))
+                if (!s.Show(CatchBmp, 0, 0))
                 {
                     MessageBox.Show("show error");
                     break;
                 }
-                break;
+                //break;
                 sw.Stop();
                 Debug.Print($"{DateTime.Now:HH:mm:ss.fff} [传输完成] 耗时:{sw.ElapsedMilliseconds}ms");
                 sw.Restart();
