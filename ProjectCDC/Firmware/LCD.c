@@ -194,7 +194,6 @@ void LCD_SET(PUINT8XV p)
 		{
 			while(len)
 			{
-				ROM_DATA_L=*p;
 				i=0x80;
 				do
 				{
@@ -203,6 +202,7 @@ void LCD_SET(PUINT8XV p)
 					i>>=1;
 					while(S0_FREE==0); SPI0_DATA = ROM_DATA_H;
 				} while (i);
+				ROM_DATA_L=*p;
 				--len;
 			}
 		}
