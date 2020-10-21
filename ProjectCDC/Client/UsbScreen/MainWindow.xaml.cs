@@ -38,21 +38,18 @@ namespace UsbScreen
             InitializeComponent();
         }
 
-        [System.Runtime.InteropServices.DllImport("gdi32.dll")]
-        private static extern bool DeleteObject(IntPtr hObject);
         private void ShowPicture(Bitmap bitmap)
         {
-            IntPtr hBitmap = bitmap.GetHbitmap();
-            ImageSource wpfBitmap = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(
-                hBitmap,
-                IntPtr.Zero,
-                Int32Rect.Empty,
-                BitmapSizeOptions.FromEmptyOptions());
-            if (!DeleteObject(hBitmap))
-            {
-                throw new System.ComponentModel.Win32Exception();
-            }
-            PriviewImage.Source = wpfBitmap;
+            MemoryStream ms = new MemoryStream();
+            bitmap.Save(ms, System.Drawing.Imaging.ImageFormat.Bmp);
+            byte[] bytes = ms.GetBuffer();  //byte[]   bytes=   ms.ToArray(); 这两句都可以
+            ms.Close();
+            //Convert it to BitmapImage
+            BitmapImage image = new BitmapImage();
+            image.BeginInit();
+            image.StreamSource = new MemoryStream(bytes);
+            image.EndInit();
+            Dispatcher.Invoke(new Action(() => { PriviewImage.Source = image; }));
         }
 
         private void MainWindow_OnLoaded(object sender, RoutedEventArgs e)
@@ -63,9 +60,10 @@ namespace UsbScreen
                 setting = JsonConvert.DeserializeObject<Setting>(File.ReadAllText("settings.json"));
             else
                 setting = new Setting();
-            s.Name = setting.LastPort;
+            s.RefreshPriviewEvent += (ss, ee) => ShowPicture(s.Priview);
+            if (setting.LastPort.Length > 0)
+                s.Name = setting.LastPort;
             plugin.screen = s;//屏幕对象传过去给它用
-            plugin.RefreshPriviewEvent += (ss,ee) => ShowPicture(ss as Bitmap);
             ShowPicture(s.Priview);
             ConnectButton.DataContext = s;
             EnablePluginButton.DataContext = plugin;
@@ -73,7 +71,7 @@ namespace UsbScreen
             RefreshPortList();
             RefreshPluginList();
             HwndSource source = PresentationSource.FromVisual(this) as HwndSource;
-            source.AddHook(WndProc);  // 绑定事件监听,用于监听HID设备插拔
+            source?.AddHook(WndProc);  // 绑定事件监听,用于监听HID设备插拔
         }
 
         private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)

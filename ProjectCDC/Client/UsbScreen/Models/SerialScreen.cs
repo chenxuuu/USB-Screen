@@ -59,6 +59,19 @@ namespace UsbScreen.Models
             set => sp.PortName = value;
         }
 
+        public event EventHandler RefreshPriviewEvent;
+        private void RefreshPriview()
+        {
+            try
+            {
+                RefreshPriviewEvent?.Invoke(null,EventArgs.Empty);
+            }
+            catch (Exception e)
+            {
+                Plugin.ErrorLogger(e.ToString());
+            }
+        }
+
         /// <summary>
         /// 初始化
         /// </summary>
@@ -71,6 +84,7 @@ namespace UsbScreen.Models
             Priview = new Bitmap(width, height);
             PriviewG = Graphics.FromImage(Priview);
             PriviewG.FillRectangle(Brushes.Black, 0, 0, width, height);
+            RefreshPriview();
         }
 
         /// <summary>
@@ -110,6 +124,8 @@ namespace UsbScreen.Models
                 return true;
             if (name != null)//配置串口名
                 Name = name;
+            if (Name.Length == 0)
+                return false;
             try
             {
                 sp.Open();
@@ -156,7 +172,7 @@ namespace UsbScreen.Models
             if (!IsConnected)
             {
                 Debug.WriteLine("not connected, try reconnect");
-                if(!Connect())
+                if(sp.PortName.Length > 0 && !Connect())
                     return false;
             }
             try
@@ -191,6 +207,7 @@ namespace UsbScreen.Models
             int tx = ex - x + 1, ty = ey - y + 1;
             //更新预览图
             PriviewG.DrawImage(pic,x,y);
+            RefreshPriview();
             if (!tc)//彩色图片
             {
                 //待发送数据

@@ -5,8 +5,10 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Remoting.Channels;
 using System.Text;
 using System.Threading.Tasks;
+using System.Timers;
 using UsbScreen.Interface;
 
 namespace UsbScreen.Models
@@ -18,20 +20,39 @@ namespace UsbScreen.Models
         /// 是否已启用了某插件？
         /// </summary>
         public bool IsEnable { get; set; } = false;
+        private Timer _t = new Timer();
+
+        public Plugin()
+        {
+            _t.AutoReset = false;
+            _t.Elapsed += (sender, ee) =>
+            {
+                if(!IsEnable)
+                    return;
+                _t.Stop();
+                try
+                {
+                    //刷新第一屏
+                    (Bitmap pic, int x, int y, long next) =
+                        (ValueTuple<Bitmap, int, int, long>) _refresh.Invoke(_o, new object[] { });
+                    Task.Run(() =>
+                    {
+                        screen?.Show(pic,x,y);
+                        _t.Interval = next;
+                        _t.Start();
+                    });//异步刷，防止卡
+                }
+                catch (Exception e)
+                {
+                    ErrorLogger(e.ToString());
+                }
+            };
+        }
+
         /// <summary>
         /// 待操作的屏幕对象
         /// </summary>
         public SerialScreen screen;
-
-        public event EventHandler RefreshPriviewEvent;
-        private void RefreshPriview(Bitmap p)
-        {
-            try
-            {
-                RefreshPriviewEvent(p, EventArgs.Empty);
-            }
-            catch { }
-        }
 
         private MethodInfo _enable = null;
         private MethodInfo _refresh = null;
@@ -43,7 +64,7 @@ namespace UsbScreen.Models
             return Directory.GetFiles("plugin", "*.dll");
         }
 
-        public void ErrorLogger(string err)
+        public static void ErrorLogger(string err)
         {
             File.AppendAllText("error_log.txt", 
                 $"{DateTime.Now.ToString("[yyyy-MM-dd HH:mm:ss:ffff]")}\r\n{err}\r\n\r\n");
@@ -90,8 +111,12 @@ namespace UsbScreen.Models
             {
                 //刷新第一屏
                 var pic = (Bitmap)_enable.Invoke(_o, new object[] { 240, 240 });
-                Task.Run(() => screen?.Show(pic));//异步刷，防止卡
-                RefreshPriview(pic);
+                Task.Run(() =>
+                {
+                    screen?.Show(pic);
+                });//异步刷，防止卡
+                _t.Interval = 1;
+                _t.Start();
             }
             catch(Exception e)
             {
@@ -102,6 +127,8 @@ namespace UsbScreen.Models
 
         public void Disable()
         {
+            IsEnable = false;
+            _t.Stop();
             if(_o != null && _disable != null)
             {
                 try
@@ -114,7 +141,6 @@ namespace UsbScreen.Models
                     ErrorLogger(e.ToString());
                 }
             }
-            IsEnable = false;
         }
     }
 }
