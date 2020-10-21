@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO.Ports;
@@ -92,7 +93,7 @@ namespace UsbScreen.Models
                 catch (Exception e)
                 {
                     Debug.WriteLine($"[枚举串口出错] {e.Message}");
-                    devices = new string[0];
+                    devices = null;
                 }
             }
             return devices;

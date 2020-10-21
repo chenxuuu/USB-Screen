@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Timers;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -16,6 +18,8 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using UsbScreen.Models;
 using Point = System.Drawing.Point;
+using System.Windows.Interop;
+using System.Threading;
 
 namespace UsbScreen
 {
@@ -28,30 +32,6 @@ namespace UsbScreen
         public MainWindow()
         {
             InitializeComponent();
-        }
-
-        private void testButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (!s.Connect(SerialScreen.GetDeviceList()[0]))
-                MessageBox.Show("connect error");
-            Stopwatch sw = new Stopwatch();
-            Bitmap catchBmp = new Bitmap(240, 240);
-            Graphics g = Graphics.FromImage(catchBmp);
-
-            while (true)
-            {
-                g.CopyFromScreen(new Point(0, 0), new Point(0, 0), new System.Drawing.Size(240, 240));
-                sw.Start();
-                if (!s.Show(catchBmp, 0, 0))
-                {
-                    MessageBox.Show("show error");
-                    break;
-                }
-                //break;
-                sw.Stop();
-                Debug.Print($"{DateTime.Now:HH:mm:ss.fff} [传输完成] 耗时:{sw.ElapsedMilliseconds}ms");
-                sw.Restart();
-            }
         }
 
         [System.Runtime.InteropServices.DllImport("gdi32.dll")]
@@ -71,28 +51,67 @@ namespace UsbScreen
             PriviewImage.Source = wpfBitmap;
         }
 
-        private void testpicButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (!s.Connect(SerialScreen.GetDeviceList()[0]))
-                MessageBox.Show("connect error");
-            Stopwatch sw = new Stopwatch();
-            Bitmap p1 = new Bitmap("1.png");
-
-            if (!s.Show(p1, 100, 100, false))
-            {
-                MessageBox.Show("show error");
-                return;
-            }
-            ShowPicture(s.Priview);
-        }
-
         private void MainWindow_OnLoaded(object sender, RoutedEventArgs e)
         {
             ShowPicture(s.Priview);
-            PortComboBox.ItemsSource = SerialScreen.GetDeviceList();
             ConnectButton.DataContext = s;
+            RefreshPortList();
+            HwndSource source = PresentationSource.FromVisual(this) as HwndSource;
+            source.AddHook(WndProc);  // 绑定事件监听,用于监听HID设备插拔
+        }
+        private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+        {
+            if (msg == 0x219)// 监听USB设备插拔事件
+            {
+                Task.Run(() => 
+                { 
+                    for(int i=1;i<10;i++)
+                    {
+                        if (RefreshPortList())
+                            break;
+                        else
+                            Task.Delay(100).Wait();
+                    }
+                });
+                handled = true;
+            }
+            return IntPtr.Zero;
         }
 
+        /// <summary>
+        /// 刷新设备列表，并在断开恢复后重连
+        /// </summary>
+        /// <returns>串口列表是否成功获取</returns>
+        private bool RefreshPortList()
+        {
+            _ = s.IsConnected;
+            var list = SerialScreen.GetDeviceList();
+            if (list == null)//列表获取失败了
+                return false;
+            Dispatcher.Invoke(new Action(delegate
+            {
+                PortComboBox.Items.Clear();
+                foreach(var i in list)
+                {
+                    PortComboBox.Items.Add(i);
+                    if (i == s.Name)
+                    {
+                        PortComboBox.Text = i;
+                        if (!s.IsConnected && _lastStatus)//如果上次状态是已连接
+                            Task.Run(() => s.Connect());//单独开个线程连防止连接时卡死界面
+                    }
+                }
+                //如果没有项目，自动显示第一个端口
+                if (PortComboBox.Text.Length == 0 && list.Length > 0)
+                    PortComboBox.Text = list[0];
+            }));
+            return true;
+        }
+
+        /// <summary>
+        /// 上次的连接状态
+        /// </summary>
+        private bool _lastStatus = false;
         /// <summary>
         /// 连接、断开设备
         /// </summary>
@@ -103,12 +122,14 @@ namespace UsbScreen
             if (s.IsConnected)
             {
                 s.Disconnect();
+                _lastStatus = false;
                 return;
             }
             if (PortComboBox.SelectedItem == null)
                 return;
             if(((string)PortComboBox.SelectedItem).Length > 0)
                 s.Connect((string)PortComboBox.SelectedItem);
+            _lastStatus = true;
         }
     }
 }
