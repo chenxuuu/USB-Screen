@@ -20,7 +20,7 @@ namespace Clock
             _height = height;
             _pic = new Bitmap(width, height);
             _g = Graphics.FromImage(_pic);
-            _g.FillRectangle(Brushes.Black, 0, 0, _width, _height);
+            _g.FillRectangle(Brushes.Gray, 0, 0, _width, _height);
             return _pic;
         }
 

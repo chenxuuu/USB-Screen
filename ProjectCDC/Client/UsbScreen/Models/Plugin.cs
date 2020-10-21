@@ -18,6 +18,20 @@ namespace UsbScreen.Models
         /// 是否已启用了某插件？
         /// </summary>
         public bool IsEnable { get; set; } = false;
+        /// <summary>
+        /// 待操作的屏幕对象
+        /// </summary>
+        public SerialScreen screen;
+
+        public event EventHandler RefreshPriviewEvent;
+        private void RefreshPriview(Bitmap p)
+        {
+            try
+            {
+                RefreshPriviewEvent(p, EventArgs.Empty);
+            }
+            catch { }
+        }
 
         private MethodInfo _enable = null;
         private MethodInfo _refresh = null;
@@ -27,6 +41,12 @@ namespace UsbScreen.Models
         public static string[] GetPluginList()
         {
             return Directory.GetFiles("plugin", "*.dll");
+        }
+
+        public void ErrorLogger(string err)
+        {
+            File.AppendAllText("error_log.txt", 
+                $"{DateTime.Now.ToString("[yyyy-MM-dd HH:mm:ss:ffff]")}\r\n{err}\r\n\r\n");
         }
 
         public bool EnablePlugin(string path)
@@ -57,15 +77,26 @@ namespace UsbScreen.Models
                     break;
                 }
             }
-            catch
+            catch(Exception e)
             {
+                ErrorLogger(e.ToString());
                 return false;
             }
             if (!valid)//插件无效
                 return false;
             IsEnable = true;//插件状态改为启用
             Debug.WriteLine("plugin enabled");
-            Debug.WriteLine(((Bitmap)_enable.Invoke(_o, new object[] { 240,240 })).ToString());
+            try
+            {
+                //刷新第一屏
+                var pic = (Bitmap)_enable.Invoke(_o, new object[] { 240, 240 });
+                Task.Run(() => screen?.Show(pic));//异步刷，防止卡
+                RefreshPriview(pic);
+            }
+            catch(Exception e)
+            {
+                ErrorLogger(e.ToString());
+            }
             return true;
         }
 
@@ -78,9 +109,9 @@ namespace UsbScreen.Models
                     _disable.Invoke(_o, null);
                     Debug.WriteLine("plugin disabled");
                 }
-                catch
+                catch(Exception e)
                 {
-
+                    ErrorLogger(e.ToString());
                 }
             }
             IsEnable = false;

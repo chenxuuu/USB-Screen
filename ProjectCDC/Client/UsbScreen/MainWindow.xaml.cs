@@ -63,7 +63,9 @@ namespace UsbScreen
                 setting = JsonConvert.DeserializeObject<Setting>(File.ReadAllText("settings.json"));
             else
                 setting = new Setting();
-
+            s.Name = setting.LastPort;
+            plugin.screen = s;//屏幕对象传过去给它用
+            plugin.RefreshPriviewEvent += (ss,ee) => ShowPicture(ss as Bitmap);
             ShowPicture(s.Priview);
             ConnectButton.DataContext = s;
             EnablePluginButton.DataContext = plugin;
@@ -73,6 +75,7 @@ namespace UsbScreen
             HwndSource source = PresentationSource.FromVisual(this) as HwndSource;
             source.AddHook(WndProc);  // 绑定事件监听,用于监听HID设备插拔
         }
+
         private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
             if (msg == 0x219)// 监听USB设备插拔事件
@@ -148,7 +151,7 @@ namespace UsbScreen
         /// <summary>
         /// 上次的连接状态
         /// </summary>
-        private bool _lastStatus = false;
+        private bool _lastStatus = true;
         /// <summary>
         /// 连接、断开设备
         /// </summary>
@@ -159,6 +162,7 @@ namespace UsbScreen
             if (s.IsConnected)
             {
                 s.Disconnect();
+                setting.LastPort = "";
                 _lastStatus = false;
                 return;
             }
