@@ -324,12 +324,14 @@ void USB_DeviceInterrupt(void) interrupt INT_NO_USB
 		}
 		UIF_TRANSFER = 0;															// 清除USB传输完成中断标志
 	}
-	if (UIF_BUS_RST)                                                           		// USB总线复位中断
+	else if (UIF_BUS_RST)                                                           // USB总线复位中断
 	{
-		USB_DEV_AD = 0x00;															// USB总线复位，重置设备地址
+		USB_DEV_AD &= bUDA_GP_BIT;													// USB总线复位，重置设备地址
+		USB_INT_FG = 0xFF;															// 总线复位,清除全部中断
 	}
-	if (UIF_SUSPEND)																// 总线挂起或唤醒中断
+	else if (UIF_SUSPEND)															// 总线挂起或唤醒中断
 	{
+		UIF_SUSPEND = 0;
 		if (USB_MIS_ST & bUMS_SUSPEND)	// 已经有一段时间没有USB活动，请求挂起
 		{
 			SAFE_MOD = 0x55;
@@ -338,6 +340,5 @@ void USB_DeviceInterrupt(void) interrupt INT_NO_USB
 			PCON |= PD;	// 进入睡眠状态
 		}
 	}
-//	if (UIF_FIFO_OV){}																// FIFO溢出中断
-	USB_INT_FG = 0xFF;	// 所有USB中断事务处理完成,清除全部中断
+	else UIF_FIFO_OV = 0;															// 清FIFO溢出中断标志
 }
