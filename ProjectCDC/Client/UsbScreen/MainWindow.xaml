@@ -6,12 +6,14 @@
         xmlns:local="clr-namespace:UsbScreen"
         mc:Ignorable="d"
         WindowStartupLocation="CenterScreen"
-        Title="Screen Control Console" Height="270" Width="480"
+        Title="屏幕控制终端" Height="270" Width="480"
         Loaded="MainWindow_OnLoaded">
     <Window.Resources>
         <local:ConnectOrDisconnect x:Key="ConnectOrDisconnectConverter"/>
+        <local:EnableOrDisable x:Key="EnableOrDisableConverter"/>
+        <local:boolNot x:Key="boolNotConverter"/>
     </Window.Resources>
-    <Grid>
+    <Grid Background="#FFFAFAFA">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="*"/>
@@ -35,10 +37,9 @@
                 <Button Name="ConnectButton" Margin="3,0" Width="50" Click="ConnectButton_OnClick" Content="{Binding IsConnected,Converter={StaticResource ConnectOrDisconnectConverter}}"/>
             </StackPanel>
             <TextBlock Text="插件列表：" Grid.Row="5" VerticalAlignment="Center" Margin="5,0"/>
-            <Button Name="RefreshPluginButton" Content="刷新插件列表" Grid.Row="5" Margin="5,2" Width="80" HorizontalAlignment="Right"/>
-            <ComboBox Name="PluginComboBox" Grid.Row="6" Margin="5,2">
-                <ComboBoxItem Content="随便显示一个项目" IsSelected="True"/>
-            </ComboBox>
+            <Button Name="RefreshPluginButton" Content="刷新插件列表" Grid.Row="5" Margin="5,2" Width="80" HorizontalAlignment="Right"
+                    IsEnabled="{Binding IsEnable,Converter={StaticResource boolNotConverter}}" Click="RefreshPluginButton_Click"/>
+            <ComboBox Name="PluginComboBox" Grid.Row="6" Margin="5,2"/>
             <Grid Grid.Row="7" Margin="0,0" Grid.RowSpan="2">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -48,10 +49,12 @@
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <Button Name="EnablePluginButton" Content="启用" Margin="5,2" Grid.Column="0" Grid.Row="0"/>
-                <Button Name="DisablePluginButton" Content="停用" Margin="5,2" Grid.Column="0" Grid.Row="1"/>
-                <Button Name="OpenPluginFolderButton" Content="打开插件文件夹" Margin="5,2" Grid.Column="1" Grid.Row="0"/>
-                <Button Name="CheckUpdateButton" Content="检查新版本" Margin="5,2" Grid.Column="1" Grid.Row="1"/>
+                <Button Name="EnablePluginButton" 
+                        Content="{Binding IsEnable,Converter={StaticResource EnableOrDisableConverter}}" 
+                        Margin="5,2" Grid.Column="0" Grid.Row="0" Click="EnablePluginButton_Click"/>
+                <Button Name="GetPluginButton" Content="获取插件" Margin="5,2" Grid.Column="0" Grid.Row="1" Click="GetPluginButton_Click"/>
+                <Button Name="OpenPluginFolderButton" Content="插件文件夹" Margin="5,2" Grid.Column="1" Grid.Row="0" Click="OpenPluginFolderButton_Click"/>
+                <Button Name="CheckUpdateButton" Content="更新插件" Margin="5,2" Grid.Column="1" Grid.Row="1" Click="CheckUpdateButton_Click"/>
             </Grid>
         </Grid>
     </Grid>
