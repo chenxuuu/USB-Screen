@@ -67,7 +67,7 @@ namespace UsbScreen.Models
         public static void ErrorLogger(string err)
         {
             File.AppendAllText("error_log.txt", 
-                $"{DateTime.Now.ToString("[yyyy-MM-dd HH:mm:ss:ffff]")}\r\n{err}\r\n\r\n");
+                $"{DateTime.Now:[yyyy-MM-dd HH:mm:ss:ffff]}\r\n{err}\r\n\r\n");
         }
 
         public bool EnablePlugin(string path)
