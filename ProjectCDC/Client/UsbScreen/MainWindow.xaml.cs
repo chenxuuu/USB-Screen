@@ -1,34 +1,20 @@
 using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Timers;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using UsbScreen.Models;
-using Point = System.Drawing.Point;
-using System.Windows.Interop;
-using System.Threading;
 using System.IO;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Interop;
+using System.Windows.Media.Imaging;
 using Newtonsoft.Json;
+using UsbScreen.Models;
 
 namespace UsbScreen
 {
-    /// <summary>
-    /// MainWindow.xaml 的交互逻辑
-    /// </summary>
-    public partial class MainWindow : Window
+	/// <summary>
+	/// MainWindow.xaml 的交互逻辑
+	/// </summary>
+	public partial class MainWindow : Window
     {
         SerialScreen s = new SerialScreen();
         Plugin plugin = new Plugin();
@@ -49,7 +35,7 @@ namespace UsbScreen
             image.BeginInit();
             image.StreamSource = new MemoryStream(bytes);
             image.EndInit();
-            Dispatcher.Invoke(new Action(() => { PriviewImage.Source = image; }));
+            PriviewImage.Source = image;
         }
 
         private void MainWindow_OnLoaded(object sender, RoutedEventArgs e)
@@ -60,7 +46,7 @@ namespace UsbScreen
                 setting = JsonConvert.DeserializeObject<Setting>(File.ReadAllText("settings.json"));
             else
                 setting = new Setting();
-            s.RefreshPriviewEvent += (ss, ee) => ShowPicture(s.Priview);
+            s.RefreshPriviewEvent += delegate { Dispatcher.Invoke(delegate { ShowPicture(s.Priview); }); };
             if (setting.LastPort.Length > 0)
                 s.Name = setting.LastPort;
             plugin.screen = s;//屏幕对象传过去给它用
