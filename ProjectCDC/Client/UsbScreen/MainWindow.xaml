@@ -5,57 +5,72 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:UsbScreen"
         mc:Ignorable="d"
-        WindowStartupLocation="CenterScreen"
-        Title="屏幕控制终端" Height="270" Width="480"
-        Loaded="MainWindow_OnLoaded">
+        WindowStartupLocation="CenterScreen" WindowStyle="None" AllowsTransparency="True"
+        Height="270" Width="480" Background="#00000000" BorderBrush ="#20666666"
+        Title="UsbScreen" SnapsToDevicePixels="True" Loaded="MainWindow_OnLoaded">
     <Window.Resources>
-        <local:ConnectOrDisconnect x:Key="ConnectOrDisconnectConverter"/>
-        <local:EnableOrDisable x:Key="EnableOrDisableConverter"/>
-        <local:boolNot x:Key="boolNotConverter"/>
-    </Window.Resources>
-    <Grid Background="#FFFAFAFA">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="*"/>
-        </Grid.ColumnDefinitions>
-        <Image Name="PriviewImage"/>
-        <Grid Grid.Column="1">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
-            <StackPanel Orientation="Horizontal" Margin="0,2">
-                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,0,0,0">设备：</TextBlock>
-                <ComboBox Name="PortComboBox" Width="130" Margin="3,0"></ComboBox>
-                <Button Name="ConnectButton" Margin="3,0" Width="50" Click="ConnectButton_OnClick" Content="{Binding IsConnected,Converter={StaticResource ConnectOrDisconnectConverter}}"/>
-            </StackPanel>
-            <TextBlock Text="插件列表：" Grid.Row="5" VerticalAlignment="Center" Margin="5,0"/>
-            <Button Name="RefreshPluginButton" Content="刷新插件列表" Grid.Row="5" Margin="5,2" Width="80" HorizontalAlignment="Right"
+		<ResourceDictionary>
+			<ResourceDictionary.MergedDictionaries>
+				<ResourceDictionary Source="/UsbScreen;component/Themes/TitleBarStyle.xaml"/>
+			</ResourceDictionary.MergedDictionaries>
+			<local:ConnectOrDisconnect x:Key="ConnectOrDisconnectConverter"/>
+			<local:EnableOrDisable x:Key="EnableOrDisableConverter"/>
+			<local:boolNot x:Key="boolNotConverter"/>
+		</ResourceDictionary>
+	</Window.Resources>
+	<DockPanel>
+		<Grid x:Name="TitleBar" Height="30" Background="#333333" DockPanel.Dock="Top">
+			<TextBlock Text="屏幕控制终端" Foreground="White" Opacity=".75" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="10,0"/>
+			<StackPanel x:Name="TitleMenu" HorizontalAlignment="Right" Orientation="Horizontal">
+				<Button x:Name="MinSize" Style="{StaticResource Minimize}"/>
+				<Button x:Name="AppExit" Style="{StaticResource ExitButton}"/>
+			</StackPanel>
+			<ProgressBar x:Name="progress" Height="2" VerticalAlignment="Bottom" BorderThickness="0" Background="{x:Null}"/>
+		</Grid>
+		<Grid Background="#FFFAFAFA">
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="*"/>
+				<ColumnDefinition Width="*"/>
+			</Grid.ColumnDefinitions>
+			<Image Name="PriviewImage"/>
+			<Grid Grid.Column="1">
+				<Grid.RowDefinitions>
+					<RowDefinition Height="*"/>
+					<RowDefinition Height="*"/>
+					<RowDefinition Height="*"/>
+					<RowDefinition Height="*"/>
+					<RowDefinition Height="*"/>
+					<RowDefinition Height="*"/>
+					<RowDefinition Height="*"/>
+					<RowDefinition Height="*"/>
+					<RowDefinition Height="*"/>
+				</Grid.RowDefinitions>
+				<StackPanel Orientation="Horizontal" Margin="0,2">
+					<TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,0,0,0">设备：</TextBlock>
+					<ComboBox Name="PortComboBox" Width="130" Margin="3,0"></ComboBox>
+					<Button Name="ConnectButton" Margin="3,0" Width="50" Click="ConnectButton_OnClick" Content="{Binding IsConnected,Converter={StaticResource ConnectOrDisconnectConverter}}"/>
+				</StackPanel>
+				<TextBlock Text="插件列表：" Grid.Row="5" VerticalAlignment="Center" Margin="5,0"/>
+				<Button Name="RefreshPluginButton" Content="刷新插件列表" Grid.Row="5" Margin="5,2" Width="80" HorizontalAlignment="Right"
                     IsEnabled="{Binding IsEnable,Converter={StaticResource boolNotConverter}}" Click="RefreshPluginButton_Click"/>
-            <ComboBox Name="PluginComboBox" Grid.Row="6" Margin="5,2"/>
-            <Grid Grid.Row="7" Margin="0,0" Grid.RowSpan="2">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-                <Button Name="EnablePluginButton" 
+				<ComboBox Name="PluginComboBox" Grid.Row="6" Margin="5,2"/>
+				<Grid Grid.Row="7" Margin="0,0" Grid.RowSpan="2">
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="*"/>
+						<ColumnDefinition Width="*"/>
+					</Grid.ColumnDefinitions>
+					<Grid.RowDefinitions>
+						<RowDefinition Height="*"/>
+						<RowDefinition Height="*"/>
+					</Grid.RowDefinitions>
+					<Button Name="EnablePluginButton" 
                         Content="{Binding IsEnable,Converter={StaticResource EnableOrDisableConverter}}" 
                         Margin="5,2" Grid.Column="0" Grid.Row="0" Click="EnablePluginButton_Click"/>
-                <Button Name="GetPluginButton" Content="获取插件" Margin="5,2" Grid.Column="0" Grid.Row="1" Click="GetPluginButton_Click"/>
-                <Button Name="OpenPluginFolderButton" Content="插件文件夹" Margin="5,2" Grid.Column="1" Grid.Row="0" Click="OpenPluginFolderButton_Click"/>
-                <Button Name="CheckUpdateButton" Content="更新插件" Margin="5,2" Grid.Column="1" Grid.Row="1" Click="CheckUpdateButton_Click"/>
-            </Grid>
-        </Grid>
-    </Grid>
+					<Button Name="GetPluginButton" Content="获取插件" Margin="5,2" Grid.Column="0" Grid.Row="1" Click="GetPluginButton_Click"/>
+					<Button Name="OpenPluginFolderButton" Content="插件文件夹" Margin="5,2" Grid.Column="1" Grid.Row="0" Click="OpenPluginFolderButton_Click"/>
+					<Button Name="CheckUpdateButton" Content="更新插件" Margin="5,2" Grid.Column="1" Grid.Row="1" Click="CheckUpdateButton_Click"/>
+				</Grid>
+			</Grid>
+		</Grid>
+	</DockPanel>
 </Window>
