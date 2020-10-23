@@ -21,6 +21,10 @@ namespace UsbScreen.Models
 		/// </summary>
 		public bool IsEnable { get; set; } = false;
 		private Timer _t = new Timer();
+		/// <summary>
+		/// 插件名称
+		/// </summary>
+		private string pluginName { get; set; }
 
 		public Plugin()
 		{
@@ -71,6 +75,7 @@ namespace UsbScreen.Models
 
 		public bool EnablePlugin(string path)
 		{
+			pluginName = path;
 			path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, path);
 			if (!File.Exists(path))
 				return false;
@@ -98,7 +103,7 @@ namespace UsbScreen.Models
 			}
 			if (!valid) return false;//插件无效
 			IsEnable = true;//插件状态改为启用
-			Debug.WriteLine($"[目标插件已启用] ${path} is running...");
+			Debug.Print($"[目标插件已启用] ${path} is Enabled");
 			try
 			{
 				//刷新第一屏
@@ -126,7 +131,7 @@ namespace UsbScreen.Models
 				try
 				{
 					_disable.Invoke(_o, null);
-					Debug.WriteLine("plugin disabled");
+					Debug.Print($"[目标插件已停用] ${pluginName} is Disabled");
 				}
 				catch (Exception e)
 				{
