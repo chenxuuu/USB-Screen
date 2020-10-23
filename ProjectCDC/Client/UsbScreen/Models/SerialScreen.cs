@@ -210,7 +210,7 @@ namespace UsbScreen.Models
 			if (!IsConnected) return false;
 			// 提取图片像素颜色数据
 			List<Color> ColorList = new List<Color>();
-			for (int h = 0; h < tx; ++h)
+			for (int h = 0; h < ty; ++h)
 			{
 				for (int v = 0; v < tx; ++v)
 				{
