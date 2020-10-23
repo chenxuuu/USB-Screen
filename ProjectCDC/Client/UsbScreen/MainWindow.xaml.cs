@@ -67,26 +67,24 @@ namespace UsbScreen
 			source?.AddHook(WndProc);  // 绑定事件监听,用于监听HID设备插拔
 		}
 
+		private static int UsbPluginDeley = 0;
 		private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
 		{
 			if (msg == 0x219)// 监听USB设备插拔消息
 			{
-				Task.Run(() =>
+				if (UsbPluginDeley == 0)
 				{
-					for (int i = 1; i < 10; i++)
+					++UsbPluginDeley;   // Task启动需要准备时间,这里提前对公共变量加一
+					Task.Run(() =>
 					{
-						if (RefreshPortList())
-						{
-							Console.WriteLine("RefreshPortList");
-							break;
-						}
-						else
-						{
-							Console.WriteLine("Wait RefreshPortList");
-							Task.Delay(100).Wait();
-						}
-					}
-				});
+						do Task.Delay(100).Wait();
+						while (++UsbPluginDeley < 10);
+						UsbPluginDeley = 0;
+						RefreshPortList();
+						Debug.Print($"[USB拔插事件] {DateTime.Now:HH:mm:ss.fff}");
+					});
+				}
+				else UsbPluginDeley = 1;
 				handled = true;
 			}
 			else if (msg == 0x0320)// 监听系统主题颜色变更消息
@@ -102,28 +100,57 @@ namespace UsbScreen
 		/// <returns>串口列表是否成功获取</returns>
 		private bool RefreshPortList()
 		{
-			_ = s.IsConnected;
-			var list = SerialScreen.GetDeviceList();
-			if (list == null)//列表获取失败了
-				return false;
-			Dispatcher.Invoke(new Action(delegate
+			bool result = true;
+			Dispatcher.Invoke(delegate
 			{
-				PortComboBox.Items.Clear();
-				foreach (var i in list)
+				PortComboBox.ItemsSource = SerialScreen.GetDeviceList();
+				if (PortComboBox.Items.Count == 0)
 				{
-					PortComboBox.Items.Add(i);
-					if (i == s.Name)
-					{
-						PortComboBox.Text = i;
-						if (!s.IsConnected && _lastStatus)//如果上次状态是已连接
-							Task.Run(() => s.Connect());//单独开个线程连防止连接时卡死界面
-					}
+					result = false;
 				}
-				//如果没有项目，自动显示第一个端口
-				if (PortComboBox.Text.Length == 0 && list.Length > 0)
-					PortComboBox.Text = list[0];
-			}));
-			return true;
+				else if (PortComboBox.Items.Contains(s.Name))
+				{
+					PortComboBox.SelectedItem = s.Name;
+					if (!s.IsConnected && _lastStatus)//如果上次状态是已连接
+						Task.Run(() => s.Connect());//单独开个线程连防止连接时卡死界面
+				}
+				else PortComboBox.SelectedIndex = 0;
+			});
+			_ = s.IsConnected;
+			return result;
+
+
+
+			//	string[] list = SerialScreen.GetDeviceList();
+			//if (list == null) return false;//列表获取失败了
+			//Dispatcher.Invoke(delegate
+			//{
+			//	PortComboBox.ItemsSource = list;
+			//	if (PortComboBox.Items.Count == 0) return;
+			//	if (PortComboBox.Items.Contains(s.Name))
+			//	{
+			//		PortComboBox.SelectedItem = s.Name;
+			//		if (!s.IsConnected && _lastStatus)//如果上次状态是已连接
+			//			Task.Run(() => s.Connect());//单独开个线程连防止连接时卡死界面
+			//	}
+			//	else PortComboBox.SelectedIndex = 0;
+
+			//	PortComboBox.Items.Clear();
+			//	foreach (var i in list)
+			//	{
+			//		PortComboBox.Items.Add(i);
+			//		if (i == s.Name)
+			//		{
+			//			PortComboBox.Text = i;
+			//			if (!s.IsConnected && _lastStatus)//如果上次状态是已连接
+			//				Task.Run(() => s.Connect());//单独开个线程连防止连接时卡死界面
+			//		}
+			//	}
+			//	//如果没有项目，自动显示第一个端口
+			//	if (PortComboBox.Text.Length == 0 && list.Length > 0)
+			//		PortComboBox.Text = list[0];
+			//});
+			//return true;
 		}
 
 		/// <summary>
@@ -131,22 +158,14 @@ namespace UsbScreen
 		/// </summary>
 		private void RefreshPluginList()
 		{
-			var list = Plugin.GetPluginList();
-			Dispatcher.Invoke(new Action(delegate
+			PluginComboBox.ItemsSource = Plugin.GetPluginList();
+			if (PluginComboBox.Items.Count == 0) return;
+			if (PluginComboBox.Items.Contains(setting.LastPlugin))
 			{
-				PluginComboBox.Items.Clear();
-				foreach (var i in list)
-				{
-					PluginComboBox.Items.Add(i);
-					if (i == setting.LastPlugin)
-					{
-						plugin.EnablePlugin(setting.LastPlugin);
-					}
-				}
-				//如果没有项目，自动显示第一个端口
-				if (PluginComboBox.Text.Length == 0 && list.Length > 0)
-					PluginComboBox.Text = list[0];
-			}));
+				PluginComboBox.SelectedItem = setting.LastPlugin;
+				plugin.EnablePlugin(setting.LastPlugin);
+			}
+			else PluginComboBox.SelectedIndex = 0;
 		}
 
 		/// <summary>
