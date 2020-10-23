@@ -206,6 +206,8 @@ namespace UsbScreen.Models
 			// 更新预览图
 			PriviewG.DrawImage(pic, x, y);
 			RefreshPriview();
+			// 如果设备未连接,就不推送数据了
+			if (!IsConnected) return false;
 			// 提取图片像素颜色数据
 			List<Color> ColorList = new List<Color>();
 			for (int h = 0; h < tx; ++h)
