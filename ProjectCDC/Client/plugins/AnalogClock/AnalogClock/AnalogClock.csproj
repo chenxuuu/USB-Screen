@@ -42,9 +42,20 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Class1.cs" />
+    <Compile Include="Class.cs" />
     <Compile Include="IScreen.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>set WORKDIR=$(SolutionDir)
+set PluginDIR=plugins\AnalogClock\AnalogClock\bin\Debug\
+set PluginEXE=$(TargetFileName)
+set ClientDIR=UsbScreen\bin\Debug\plugin\
+cd %25WORKDIR%25
+cd ../../
+if exist UsbScreen\ (
+copy %25PluginDIR%25%25PluginEXE%25 %25ClientDIR%25
+)</PostBuildEvent>
+  </PropertyGroup>
 </Project>

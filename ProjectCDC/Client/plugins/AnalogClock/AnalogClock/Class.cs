@@ -36,8 +36,8 @@ namespace AnalogClock
 		{
 			ScreenV = width;
 			ScreenH = height;
-			Dial = new Bitmap(ScreenV, ScreenH);		// 设置表盘
-			TimetHand = new Bitmap(ScreenV, ScreenH);	// 设置时针
+			Dial = new Bitmap(ScreenV, ScreenH);        // 设置表盘
+			TimetHand = new Bitmap(ScreenV, ScreenH);   // 设置时针
 			DrawBackImage();
 			return Dial;
 		}
@@ -83,8 +83,8 @@ namespace AnalogClock
 
 			// 以指定半径和线宽绘制圆弧
 			float radius = (Dial.Width < Dial.Height ? Dial.Width : Dial.Height) / 2 - 2;   // 半径
-			Pen cScale = new Pen(new SolidBrush(Color.FromArgb(19, 20, 25)), 3);            // 表框
-			Canvas.DrawArc(cScale, -radius, -radius, radius * 2, radius * 2, 0, 360);
+			Pen cScale = new Pen(new SolidBrush(Color.FromArgb(19, 20, 25)), 3);            // 颜色和线宽
+			Canvas.DrawArc(cScale, -radius, -radius, radius * 2, radius * 2, 0, 360);       // 表框
 
 			// 绘制刻度
 			Pen hScale = new Pen(new SolidBrush(Color.FromArgb(122, 179, 222)), 2);         // 时刻
@@ -92,15 +92,14 @@ namespace AnalogClock
 			for (int i = 0; i <= 60; i++)
 			{
 				float angel = i * 6;
+				PointF pointA = GetEndPoint(angel, radius - 5);
 				if (i % 5 == 0)
 				{
-					PointF pointA = GetEndPoint(angel, radius - 5);
 					PointF pointB = GetEndPoint(angel, radius - 15);
 					Canvas.DrawLine(hScale, pointA.X, pointA.Y, pointB.X, pointB.Y);
 				}
 				else
 				{
-					PointF pointA = GetEndPoint(angel, radius - 5);
 					PointF pointB = GetEndPoint(angel, radius - 10);
 					Canvas.DrawLine(mScale, pointA.X, pointA.Y, pointB.X, pointB.Y);
 				}
@@ -108,10 +107,10 @@ namespace AnalogClock
 
 			// 绘制文字
 			Font scaleFont = new Font(new FontFamily("Consolas"), 18, FontStyle.Bold, GraphicsUnit.Pixel);  // 字体
-			SizeF fontSize = Canvas.MeasureString("12", scaleFont);
 			SolidBrush brush = new SolidBrush(Color.FromArgb(77, 88, 124));                                 // 颜色
 			for (int i = 1; i <= 12; ++i)
 			{
+				SizeF fontSize = Canvas.MeasureString(i.ToString(), scaleFont);
 				PointF pointT = GetEndPoint(270 + i * 30, radius - 18 - fontSize.Width / 2);
 				Canvas.DrawString(i.ToString(), scaleFont, brush, pointT.X - fontSize.Width / 2, pointT.Y - fontSize.Width / 2);
 			}
@@ -129,6 +128,8 @@ namespace AnalogClock
 			Canvas.SmoothingMode = SmoothingMode.HighQuality;
 			// 设置画布起点(这里设置为画布中心)
 			Canvas.TranslateTransform(TimetHand.Width / 2, TimetHand.Height / 2);
+			// 圆形绘图范围半径
+			float radius = (TimetHand.Width < TimetHand.Height ? TimetHand.Width : TimetHand.Height) / 2 - 2;
 
 			// 获取当前时间
 			DateTime Time = DateTime.Now;
@@ -137,41 +138,37 @@ namespace AnalogClock
 			int S = Time.Second;
 
 			// 时针
-			float radius = 60;
-			float angel = 30 * H + 30 * M / 60;
-			List<PointF> handPoins = new List<PointF>();
-			handPoins.Add(GetEndPoint(270, radius));
-			handPoins.Add(GetEndPoint(180, 9));
-			handPoins.Add(GetEndPoint(90, 9));
-			handPoins.Add(GetEndPoint(0, 9));
+			float angel = H * 30 + M * 30 / 60;
+			Brush handColor = new SolidBrush(ColorTranslator.FromHtml("#424c50"));
 			Canvas.RotateTransform(angel);
-			Canvas.FillPolygon(new SolidBrush(ColorTranslator.FromHtml("#990033")), handPoins.ToArray());
+			Canvas.FillEllipse(handColor, -10, -10, 20, 20);
+			Canvas.FillPolygon(handColor, new PointF[] { new PointF(0, -15), new PointF(-10, -24), new PointF(0, -33), new PointF(10, -24) });
+			Canvas.FillPolygon(handColor, new PointF[] { new PointF(5, 15), new PointF(-5, 15), new PointF(-2, -60), new PointF(2, -60) });
 			Canvas.RotateTransform(-angel);
 
 			// 分针
-			radius = 70;
-			angel = 6 * M + 6 * S / 60;
-			handPoins.Clear();
-			handPoins.Add(GetEndPoint(270, radius));
-			handPoins.Add(GetEndPoint(180, 7));
-			handPoins.Add(GetEndPoint(90, 7));
-			handPoins.Add(GetEndPoint(0, 7));
+			angel = M * 6 + S * 6 / 60;
+			handColor = new SolidBrush(ColorTranslator.FromHtml("#a78e44"));
 			Canvas.RotateTransform(angel);
-			Canvas.FillPolygon(new SolidBrush(ColorTranslator.FromHtml("#336633")), handPoins.ToArray());
+			Canvas.FillEllipse(handColor, -8, -8, 16, 16);
+			Canvas.DrawEllipse(new Pen(handColor, 2), -6, -40, 12, 12);
+			Canvas.FillPolygon(handColor, new PointF[] { new PointF(4, 15), new PointF(-4, 15), new PointF(-2, -29), new PointF(2, -29) });
+			Canvas.FillPolygon(handColor, new PointF[] { new PointF(2, -39), new PointF(-2, -39), new PointF(-1, -70), new PointF(1, -70) });
 			Canvas.RotateTransform(-angel);
 
 			// 秒针
-			radius = 90;
-			angel = 6 * S;
-			handPoins.Clear();
-			handPoins.Add(GetEndPoint(270, radius));
-			handPoins.Add(GetEndPoint(180, 5));
-			handPoins.Add(GetEndPoint(90, 5));
-			handPoins.Add(GetEndPoint(0, 5));
+			angel = S * 6;
+			handColor = new SolidBrush(ColorTranslator.FromHtml("#4c221b"));
 			Canvas.RotateTransform(angel);
-			Canvas.FillPolygon(new SolidBrush(ColorTranslator.FromHtml("#FFCC99")), handPoins.ToArray());
+			Canvas.FillEllipse(handColor, -6, -6, 12, 12);
+			Canvas.FillPolygon(handColor, new PointF[] { new PointF(3, 20), new PointF(-3, 20), new PointF(-1, -90), new PointF(1, -90) });
+			Canvas.FillEllipse(Brushes.Black, -4, -4, 8, 8);
 			Canvas.RotateTransform(-angel);
-		}
 
+			// 突出显示秒刻
+			PointF pointA = GetEndPoint(270 + angel, radius - 5);
+			PointF pointB = GetEndPoint(270 + angel, radius - (S % 5 == 0 ? 15 : 10));
+			Canvas.DrawLine(new Pen(Brushes.Red, (S % 5 == 0 ? 2 : 1)), pointA.X, pointA.Y, pointB.X, pointB.Y);
+		}
 	}
 }
