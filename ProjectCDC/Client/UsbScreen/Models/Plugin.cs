@@ -5,63 +5,84 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.Remoting.Channels;
-using System.Text;
-using System.Threading.Tasks;
 using System.Timers;
-using UsbScreen.Interface;
 
 namespace UsbScreen.Models
 {
+	class IPlugin
+	{
+		/// <summary>
+		/// 插件路径
+		/// </summary>
+		public string Path { get; set; } = null;
+		/// <summary>
+		/// 插件名称(文件名)
+		/// </summary>
+		public string Name{ get{ return Path.Split('\\').Last(); } }
+		/// <summary>
+		/// 对象引用到插件
+		/// </summary>
+		public object Plugin { get; set; } = null;
+		/// <summary>
+		/// 初始化插件
+		/// </summary>
+		public MethodInfo Init { get; set; } = null;
+		/// <summary>
+		/// 获取插件数据
+		/// </summary>
+		public MethodInfo GetData { get; set; } = null;
+		/// <summary>
+		/// 释放插件资源
+		/// </summary>
+		public MethodInfo Dispose { get; set; } = null;
+	}
+
 	[PropertyChanged.AddINotifyPropertyChangedInterface]
 	class Plugin
 	{
 		/// <summary>
+		/// 待操作的屏幕对象
+		/// </summary>
+		public SerialScreen screen { get; set; }
+		/// <summary>
 		/// 是否已启用了某插件？
 		/// </summary>
 		public bool IsEnable { get; set; } = false;
-		private Timer _t = new Timer();
 		/// <summary>
-		/// 插件名称
+		/// 保存已加载的插件
 		/// </summary>
-		private string pluginName { get; set; }
+		private List<IPlugin> Imlugins = new List<IPlugin>();
+		/// <summary>
+		/// 保存当前已启用插件的索引
+		/// </summary>
+		private int PIndex { get; set; } = -1;
+		/// <summary>
+		/// 插件访问定时器
+		/// </summary>
+		private readonly Timer PluginTimer = new Timer();
 
 		public Plugin()
 		{
-			_t.AutoReset = false;
-			_t.Elapsed += (sender, ee) =>
+			PluginTimer.AutoReset = false;
+			PluginTimer.Elapsed += delegate
 			{
-				if (!IsEnable)
-					return;
-				_t.Stop();
+				PluginTimer.Stop();
+				if (!IsEnable) return;
 				try
 				{
-					//刷新第一屏
-					(Bitmap pic, int x, int y, long next) =
-						(ValueTuple<Bitmap, int, int, long>)_refresh.Invoke(_o, new object[] { });
-					Task.Run(() =>
-					{
-						screen?.Show(pic, x, y);
-						_t.Interval = next;
-						_t.Start();
-					});//异步刷，防止卡
+					(Bitmap pic, int x, int y, long next) = (ValueTuple<Bitmap, int, int, long>)(Imlugins[PIndex].GetData).Invoke(Imlugins[PIndex].Plugin, new object[] { });
+					screen?.Show(pic, x, y);
+					PluginTimer.Interval = next;
+					PluginTimer.Start();		// 准备获取下一帧数据
 				}
 				catch (Exception e)
 				{
 					ErrorLogger(e.ToString());
+					Debug.Print(e.Message);
 				}
+
 			};
 		}
-
-		/// <summary>
-		/// 待操作的屏幕对象
-		/// </summary>
-		public SerialScreen screen;
-
-		private MethodInfo _enable = null;
-		private MethodInfo _refresh = null;
-		private MethodInfo _disable = null;
-		private object _o = null;
 
 		public static string[] GetPluginList()
 		{
@@ -75,69 +96,66 @@ namespace UsbScreen.Models
 
 		public bool EnablePlugin(string path)
 		{
-			pluginName = path;
 			path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, path);
-			if (!File.Exists(path))
-				return false;
-			bool valid = false;
-			try
+			// 判断插件是否已加载
+			if (Imlugins.Count > 0)
 			{
-				Assembly ass = Assembly.LoadFile(path);
-				foreach (Type ta in ass.GetExportedTypes())
+				PIndex = Imlugins.FindIndex(p => p.Path == path);
+				if (PIndex > -1)
 				{
-					Type t = ass.GetType(ta.FullName);
-					if (t == null || !t.IsClass || !t.IsPublic || t.GetInterface("IScreen") == null) continue;
-					_o = Activator.CreateInstance(t, null);
-					if (_o == null) return false;
-					_enable = ta.GetMethod("Enable");
-					_refresh = ta.GetMethod("Refresh");
-					_disable = ta.GetMethod("Disable");
-					valid = true;
-					break;
+					PluginTimer.Interval = 1;
+					PluginTimer.Start();
+					IsEnable = true;
+					return true;
 				}
 			}
-			catch (Exception e)
+			// 插件在加载前被删除了
+			if (!File.Exists(path)) return false;
+			// 加载新插件
+			Assembly ass = Assembly.LoadFrom(path);
+			foreach (Type t in ass.GetExportedTypes())
 			{
-				ErrorLogger(e.ToString());
-				return false;
-			}
-			if (!valid) return false;//插件无效
-			IsEnable = true;//插件状态改为启用
-			Debug.Print($"[目标插件已启用] ${path} is Enabled");
-			try
-			{
-				//刷新第一屏
-				var pic = (Bitmap)_enable.Invoke(_o, new object[] { 240, 240 });
-				Task.Run(() =>
+				if(t.GetInterface("IScreen") != null)
 				{
-					screen?.Show(pic);
-				});//异步刷，防止卡
-				_t.Interval = 1;
-				_t.Start();
+					IPlugin newPlugin = new IPlugin
+					{
+						Plugin = ass.CreateInstance(t.FullName),
+						Init = t.GetMethod("InitializeComponent"),
+						GetData = t.GetMethod("GetData"),
+						Dispose = t.GetMethod("Dispose")
+					};
+					PIndex = Imlugins.Count;
+					Imlugins.Add(newPlugin);
+				}
 			}
-			catch (Exception e)
+
+			if (PIndex > -1)
 			{
-				ErrorLogger(e.ToString());
+				try
+				{
+					Imlugins[PIndex].Init.Invoke(Imlugins[PIndex].Plugin, new object[] { 240, 240 });
+					PluginTimer.Interval = 1;
+					PluginTimer.Start();
+					IsEnable = true;
+					Debug.Print($"[目标插件已启用] Plugin Is Enabled");
+					return true;
+				}
+				catch (Exception e)
+				{
+					ErrorLogger(e.ToString());
+					Debug.Print(e.Message);
+				}
+
 			}
-			return true;
+			PIndex = -1;
+			return false;
 		}
 
 		public void Disable()
 		{
 			IsEnable = false;
-			_t.Stop();
-			if (_o != null && _disable != null)
-			{
-				try
-				{
-					_disable.Invoke(_o, null);
-					Debug.Print($"[目标插件已停用] ${pluginName} is Disabled");
-				}
-				catch (Exception e)
-				{
-					ErrorLogger(e.ToString());
-				}
-			}
+			PIndex = -1;
+			PluginTimer.Stop();
 		}
 	}
 }

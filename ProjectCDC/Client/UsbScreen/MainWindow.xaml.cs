@@ -216,10 +216,8 @@ namespace UsbScreen
 
 		private void EnablePluginButton_Click(object sender, RoutedEventArgs e)
 		{
-			if (plugin.IsEnable)
-				plugin.Disable();
-			else
-				plugin.EnablePlugin((string)PluginComboBox.SelectedItem);
+			if (plugin.IsEnable) plugin.Disable();
+			else plugin.EnablePlugin((string)PluginComboBox.SelectedItem);
 			setting.LastPlugin = plugin.IsEnable ? (string)PluginComboBox.SelectedItem : "";
 		}
 	}

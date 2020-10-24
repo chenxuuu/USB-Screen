@@ -1,6 +1,6 @@
-using System.Drawing;
+﻿using System.Drawing;
 
-namespace Clock
+namespace AnalogDigitalClock
 {
 	interface IScreen
 	{

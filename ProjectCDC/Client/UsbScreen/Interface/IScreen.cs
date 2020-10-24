@@ -1,32 +1,26 @@
-using System;
-using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace UsbScreen.Interface
 {
-    interface IScreen
+	interface IScreen
     {
         /// <summary>
-        /// 启用插件，返回第一屏
+        /// 使用指定的宽高初始化插件
         /// </summary>
-        /// <param name="width"></param>
-        /// <param name="height"></param>
-        /// <returns></returns>
-        Bitmap Enable(int width,int height);
+        /// <param name="width">画布宽度</param>
+        /// <param name="height">画布高度</param>
+        void InitializeComponent(int width, int height);
 
         /// <summary>
-        /// 获取刷新后的数据
+        /// 获取插件数据
         /// </summary>
-        /// <returns>图片、起始位置、下次刷新等待时间</returns>
-        (Bitmap pic,int x,int y,long next) Refresh();
+        /// <returns>图片，开始位置(x,y)，下次刷新等待时间</returns>
+        (Bitmap pic,int x,int y,long next) GetData();
 
         /// <summary>
         /// 停用插件
         /// </summary>
         /// <returns></returns>
-        void Disable();
+        void Dispose();
     }
 }

@@ -2,7 +2,7 @@
 using System.Drawing;
 using System.Drawing.Drawing2D;
 
-namespace AnalogClock
+namespace AnalogDigitalClock
 {
 	public class AnalogDigitalClock : IScreen
 	{
@@ -25,7 +25,7 @@ namespace AnalogClock
 		/// <summary>
 		/// 绘图画布
 		/// </summary>
-		private Graphics Canvas { get; set; }
+		private Graphics Canvas{ get; set; }
 		/// <summary>
 		/// 插件始化标记
 		/// </summary>
@@ -143,6 +143,14 @@ namespace AnalogClock
 			int H = Time.Hour;
 			int M = Time.Minute;
 			int S = Time.Second;
+
+			// 绘制文字
+			Font scaleFont = new Font(new FontFamily("Bahnschrift Light"), 24, FontStyle.Regular, GraphicsUnit.Pixel);  // 字体
+			SolidBrush brush = new SolidBrush(ColorTranslator.FromHtml("#FFFFFF"));                         // 颜色
+			SizeF fontSize = Canvas.MeasureString(H.ToString(), scaleFont);
+			Canvas.DrawString(H.ToString(), scaleFont, brush, -fontSize.Width / 2, 20);
+			fontSize = Canvas.MeasureString(M.ToString(), scaleFont);
+			Canvas.DrawString(M.ToString(), scaleFont, brush, -fontSize.Width / 2, 20 + fontSize.Height);
 
 			// 时针
 			float angel = H * 30 + M * 30 / 60;
