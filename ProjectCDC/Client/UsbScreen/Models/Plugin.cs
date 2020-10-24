@@ -70,7 +70,7 @@ namespace UsbScreen.Models
 				if (!IsEnable) return;
 				try
 				{
-					(Bitmap pic, int x, int y, long next) = (ValueTuple<Bitmap, int, int, long>)(Imlugins[PIndex].GetData).Invoke(Imlugins[PIndex].Plugin, new object[] { });
+					(Bitmap pic, int x, int y, long next) = (ValueTuple<Bitmap, int, int, long>)(Imlugins[PIndex].GetData).Invoke(Imlugins[PIndex].Plugin, null);
 					screen?.Show(pic, x, y);
 					PluginTimer.Interval = next;
 					PluginTimer.Start();		// 准备获取下一帧数据

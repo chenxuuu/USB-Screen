@@ -34,7 +34,7 @@ namespace UsbScreen.Models
 		/// 预览图
 		/// </summary>
 		public Bitmap Priview { get; set; }
-		private Graphics PriviewG;
+		private Graphics PriviewG { get; set; }
 
 		private bool _connected = false;
 		/// <summary>
