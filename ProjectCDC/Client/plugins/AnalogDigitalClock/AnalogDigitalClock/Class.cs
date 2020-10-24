@@ -145,12 +145,14 @@ namespace AnalogDigitalClock
 			int S = Time.Second;
 
 			// 绘制文字
-			Font scaleFont = new Font(new FontFamily("Bahnschrift Light"), 24, FontStyle.Regular, GraphicsUnit.Pixel);  // 字体
-			SolidBrush brush = new SolidBrush(ColorTranslator.FromHtml("#FFFFFF"));                         // 颜色
-			SizeF fontSize = Canvas.MeasureString(H.ToString(), scaleFont);
-			Canvas.DrawString(H.ToString(), scaleFont, brush, -fontSize.Width / 2, 20);
-			fontSize = Canvas.MeasureString(M.ToString(), scaleFont);
-			Canvas.DrawString(M.ToString(), scaleFont, brush, -fontSize.Width / 2, 20 + fontSize.Height);
+			Font scaleFont = new Font(new FontFamily("Bahnschrift Light"), 18, FontStyle.Regular, GraphicsUnit.Pixel);  // 字体
+			SolidBrush brush = new SolidBrush(ColorTranslator.FromHtml("#CA6924"));                         // 颜色
+			string date = $"{Time:yyyy年MM月dd日}";
+			SizeF fontSize = Canvas.MeasureString(date, scaleFont);
+			Canvas.DrawString(date, scaleFont, brush, -fontSize.Width / 2, -10 - fontSize.Height);
+			string week = $"{Time:dddd}";
+			fontSize = Canvas.MeasureString(week, scaleFont);
+			Canvas.DrawString(week, scaleFont, brush, -fontSize.Width / 2, 15);
 
 			// 时针
 			float angel = H * 30 + M * 30 / 60;
