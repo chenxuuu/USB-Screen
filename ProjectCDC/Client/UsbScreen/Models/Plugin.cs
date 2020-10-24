@@ -14,27 +14,40 @@ namespace UsbScreen.Models
 		/// <summary>
 		/// 插件路径
 		/// </summary>
-		public string Path { get; set; } = null;
+		public string Dir { get; set; } = null;
 		/// <summary>
 		/// 插件名称(文件名)
 		/// </summary>
-		public string Name{ get{ return Path.Split('\\').Last(); } }
+		public string Name{ get{ return Dir.Split('\\').Last(); } }
 		/// <summary>
 		/// 对象引用到插件
 		/// </summary>
 		public object Plugin { get; set; } = null;
+
+		public Type PluginType { get; set; }
 		/// <summary>
 		/// 初始化插件
 		/// </summary>
-		public MethodInfo Init { get; set; } = null;
+		public bool Init(params object[] arg)
+		{
+			PluginType.GetMethod("InitializeComponent").Invoke(Plugin, new object[] { 240, 240 });
+			return true;
+		}
 		/// <summary>
 		/// 获取插件数据
 		/// </summary>
-		public MethodInfo GetData { get; set; } = null;
+		public ValueTuple<Bitmap, int, int, long> GetData()
+		{
+			return (ValueTuple<Bitmap, int, int, long>)PluginType.GetMethod("GetData").Invoke(Plugin, null);
+		}
 		/// <summary>
 		/// 释放插件资源
 		/// </summary>
-		public MethodInfo Dispose { get; set; } = null;
+		public void Dispose()
+		{
+			PluginType.GetMethod("Dispose").Invoke(Plugin, null);
+		}
+
 	}
 
 	[PropertyChanged.AddINotifyPropertyChangedInterface]
@@ -51,7 +64,7 @@ namespace UsbScreen.Models
 		/// <summary>
 		/// 保存已加载的插件
 		/// </summary>
-		private List<IPlugin> Imlugins = new List<IPlugin>();
+		private List<IPlugin> IPlugins = new List<IPlugin>();
 		/// <summary>
 		/// 保存当前已启用插件的索引
 		/// </summary>
@@ -70,7 +83,7 @@ namespace UsbScreen.Models
 				if (!IsEnable) return;
 				try
 				{
-					(Bitmap pic, int x, int y, long next) = (ValueTuple<Bitmap, int, int, long>)(Imlugins[PIndex].GetData).Invoke(Imlugins[PIndex].Plugin, null);
+					(Bitmap pic, int x, int y, long next) = IPlugins[PIndex].GetData();
 					screen?.Show(pic, x, y);
 					PluginTimer.Interval = next;
 					PluginTimer.Start();		// 准备获取下一帧数据
@@ -98,9 +111,9 @@ namespace UsbScreen.Models
 		{
 			path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, path);
 			// 判断插件是否已加载
-			if (Imlugins.Count > 0)
+			if (IPlugins.Count > 0)
 			{
-				PIndex = Imlugins.FindIndex(p => p.Path == path);
+				PIndex = IPlugins.FindIndex(p => p.Dir == path);
 				if (PIndex > -1)
 				{
 					PluginTimer.Interval = 1;
@@ -112,7 +125,7 @@ namespace UsbScreen.Models
 			// 插件在加载前被删除了
 			if (!File.Exists(path)) return false;
 			// 加载新插件
-			Assembly ass = Assembly.LoadFrom(path);
+			Assembly ass = Assembly.Load(File.ReadAllBytes(path));
 			foreach (Type t in ass.GetExportedTypes())
 			{
 				if(t.GetInterface("IScreen") != null)
@@ -120,12 +133,11 @@ namespace UsbScreen.Models
 					IPlugin newPlugin = new IPlugin
 					{
 						Plugin = ass.CreateInstance(t.FullName),
-						Init = t.GetMethod("InitializeComponent"),
-						GetData = t.GetMethod("GetData"),
-						Dispose = t.GetMethod("Dispose")
+						PluginType = t,
+						Dir = path
 					};
-					PIndex = Imlugins.Count;
-					Imlugins.Add(newPlugin);
+					PIndex = IPlugins.Count;
+					IPlugins.Add(newPlugin);
 				}
 			}
 
@@ -133,15 +145,17 @@ namespace UsbScreen.Models
 			{
 				try
 				{
-					Imlugins[PIndex].Init.Invoke(Imlugins[PIndex].Plugin, new object[] { 240, 240 });
+					IPlugins[PIndex].Init();
 					PluginTimer.Interval = 1;
 					PluginTimer.Start();
 					IsEnable = true;
-					Debug.Print($"[目标插件已启用] Plugin Is Enabled");
+					Debug.Print($"[插件加载成功] {IPlugins[PIndex].Name} Is Enabled");
 					return true;
 				}
 				catch (Exception e)
 				{
+					IPlugins.RemoveAt(PIndex);
+					Debug.Print($"[插件加载失败] {IPlugins[PIndex].Name} Is Enable Failed");
 					ErrorLogger(e.ToString());
 					Debug.Print(e.Message);
 				}
@@ -153,9 +167,12 @@ namespace UsbScreen.Models
 
 		public void Disable()
 		{
+			IPlugins[PIndex].Dispose();	// 伪卸载插件(其实还是在内存里面,只是为了能够加载更新的DLL文件)
+			IPlugins.RemoveAt(PIndex);
 			IsEnable = false;
 			PIndex = -1;
 			PluginTimer.Stop();
 		}
 	}
 }
+
