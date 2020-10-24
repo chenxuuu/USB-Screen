@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO.Ports;
 using System.Linq;
 using System.Management;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
 using System.Windows.Media.Imaging;
@@ -187,6 +189,10 @@ namespace UsbScreen.Models
 			}
 		}
 
+		List<byte> bgraList = new List<byte>();
+		List<byte> dataList = new List<byte>();
+		List<byte> sendCMD = new List<byte>();
+		BitmapData picData = new BitmapData();
 		/// <summary>
 		/// 显示图片
 		/// </summary>
@@ -198,7 +204,8 @@ namespace UsbScreen.Models
 		public bool Show(Bitmap pic, int x = 0, int y = 0, bool tc = false)
 		{
 			if (x >= width || y >= height) return false;    // 超过屏幕高度宽度
-															// 停止的位置，防止超出画面
+
+			// 停止的位置，防止超出画面
 			int ex = (pic.Width + x > width ? width : pic.Width + x) - 1;
 			int ey = (pic.Height + y > height ? height : pic.Height + y) - 1;
 			// 处理后的长宽
@@ -209,53 +216,52 @@ namespace UsbScreen.Models
 			// 如果设备未连接,就不推送数据了
 			if (!IsConnected) return false;
 			// 提取图片像素颜色数据
-			List<Color> ColorList = new List<Color>();
-			for (int h = 0; h < ty; ++h)
+			picData = pic.LockBits(new Rectangle(0, 0, pic.Width, pic.Height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+			byte[] colorArr = new byte[picData.Stride * pic.Height];
+			Marshal.Copy(picData.Scan0, colorArr, 0, colorArr.Length);
+			pic.UnlockBits(picData);
+			// 根据图片颜色预处理数据
+			dataList.Clear();
+			if (!tc)    // 彩色图
 			{
-				for (int v = 0; v < tx; ++v)
+				for (int i = 0; i < colorArr.Length;)
 				{
-					ColorList.Add(pic.GetPixel(v, h));
+					dataList.Add((byte)((colorArr[i + 2] & 0xF8) | (colorArr[i + 1] >> 5)));
+					dataList.Add((byte)((colorArr[i + 1] & 0xE0) | (colorArr[i + 0] >> 3)));
+					i += 4;
 				}
 			}
-			// 根据图片颜色预处理数据
-			List<byte> dataList = new List<byte>();
-			if (!tc)	// 彩色图
+			else        // 黑白图
 			{
-				ColorList.ForEach(c =>
-				{
-					dataList.Add((byte)((c.R & 0xF8) | (c.G >> 5)));
-					dataList.Add((byte)((c.G & 0xE0) | (c.B >> 3)));
-				});
-			}
-			else		// 黑白图
-			{
+				bgraList.Clear();
+				bgraList.AddRange(colorArr);
 				// 像素少于8个,补齐到8个
-				if (ColorList.Count < 8)
+				if (bgraList.Count < 8 * 4)
 				{
-					do ColorList.AddRange(ColorList);
-					while (ColorList.Count < 8);
-					ColorList = ColorList.Take(8).ToList();
+					do bgraList.AddRange(bgraList);
+					while (bgraList.Count < 8 * 4);
+					bgraList = bgraList.Take(8 * 4).ToList();
 				}
 				// 像素不是8的倍数,补齐数量
-				if ((ColorList.Count % 8) != 0)
+				if ((bgraList.Count % (8*4)) != 0)
 				{
-					ColorList.AddRange(ColorList.Take(8 - (ColorList.Count % 8)));
+					bgraList.AddRange(bgraList.Take((8 * 4) - (bgraList.Count % (8 * 4))));
 				}
 				// 提取数据
-				for (int n = 0; n < ColorList.Count;)
+				for (int n = 0; n < bgraList.Count;)
 				{
 					byte pixel8 = 0x00;
 					for (byte i = 0x80; i != 0; i >>= 1)
 					{
-						Color c = ColorList[n];
-						if ((0.3 * c.R + 0.59 * c.G + 0.11 * c.B) > 128) pixel8 |= i;   // 黑色
+						if ((bgraList[n++] * 0.11 + bgraList[n++] * 0.59 + bgraList[n++] * 0.3) > 128) pixel8 |= i;   // 黑色
 						++n;
 					}
 					dataList.Add(pixel8);
 				}
 			}
 			// 设置图片显示范围命令 (以及添加黑白标志)
-			List<byte> sendCMD = new List<byte>() { (byte)(tc ? 080 : 0x00), (byte)x, (byte)ex, (byte)y, (byte)ey };
+			sendCMD.Clear();
+			sendCMD = new List<byte>() { (byte)(tc ? 080 : 0x00), (byte)x, (byte)ex, (byte)y, (byte)ey };
 			int sortCount = dataList.Count % 64;                                    // 获取零头数据长度
 			if (sortCount <= 58)
 			{

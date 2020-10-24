@@ -1,11 +1,13 @@
 using System;
 using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Newtonsoft.Json;
 using UsbScreen.Models;
@@ -17,9 +19,10 @@ namespace UsbScreen
 	/// </summary>
 	public partial class MainWindow : Window
 	{
-		SerialScreen s = new SerialScreen();
-		Plugin plugin = new Plugin();
-		Setting setting;
+		Setting setting { get; set; } = new Setting();
+		SerialScreen s { get; set; } = new SerialScreen();
+		Plugin plugin { get; set; } = new Plugin();
+		BitmapData ShowData { get; set; } = new BitmapData();
 		public MainWindow()
 		{
 			InitializeComponent();
@@ -31,40 +34,33 @@ namespace UsbScreen
 			AppExit.Click += delegate { this.Close(); };
 		}
 
-		private void ShowPicture(Bitmap bitmap)
-		{
-			MemoryStream ms = new MemoryStream();
-			bitmap.Save(ms, System.Drawing.Imaging.ImageFormat.Bmp);
-			byte[] bytes = ms.GetBuffer();  //byte[]   bytes=   ms.ToArray(); 这两句都可以
-			ms.Close();
-			//Convert it to BitmapImage
-			BitmapImage image = new BitmapImage();
-			image.BeginInit();
-			image.StreamSource = new MemoryStream(bytes);
-			image.EndInit();
-			PriviewImage.Source = image;
-		}
-
 		private void MainWindow_OnLoaded(object sender, RoutedEventArgs e)
 		{
 			Directory.CreateDirectory("plugin");
 			//加载配置文件
 			if (File.Exists("settings.json"))
+			{
 				setting = JsonConvert.DeserializeObject<Setting>(File.ReadAllText("settings.json"));
-			else
-				setting = new Setting();
+			}
 			s.RefreshPriviewEvent += delegate { Dispatcher.Invoke(delegate { ShowPicture(s.Priview); }); };
-			if (setting.LastPort.Length > 0)
-				s.Name = setting.LastPort;
+			if (setting.LastPort.Length > 0) s.Name = setting.LastPort;
 			plugin.screen = s;//屏幕对象传过去给它用
-			ShowPicture(s.Priview);
 			ConnectButton.DataContext = s;
 			EnablePluginButton.DataContext = plugin;
 			RefreshPluginButton.DataContext = plugin;
 			RefreshPortList();
 			RefreshPluginList();
-			HwndSource source = PresentationSource.FromVisual(this) as HwndSource;
-			source?.AddHook(WndProc);  // 绑定事件监听,用于监听HID设备插拔
+			// 绑定事件监听,用于监听HID设备插拔
+			(PresentationSource.FromVisual(this) as HwndSource)?.AddHook(WndProc);
+		}
+
+		private void ShowPicture(Bitmap bitmap)
+		{
+			ShowData = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadOnly, bitmap.PixelFormat);
+			PriviewImage.Source = BitmapSource.Create(
+				ShowData.Width, ShowData.Height, 96, 96, PixelFormats.Bgra32, null,
+				ShowData.Scan0, ShowData.Stride * ShowData.Height, ShowData.Stride);
+			bitmap.UnlockBits(ShowData);
 		}
 
 		private static int UsbPluginDeley = 0;
@@ -118,39 +114,6 @@ namespace UsbScreen
 			});
 			_ = s.IsConnected;
 			return result;
-
-
-
-			//	string[] list = SerialScreen.GetDeviceList();
-			//if (list == null) return false;//列表获取失败了
-			//Dispatcher.Invoke(delegate
-			//{
-			//	PortComboBox.ItemsSource = list;
-			//	if (PortComboBox.Items.Count == 0) return;
-			//	if (PortComboBox.Items.Contains(s.Name))
-			//	{
-			//		PortComboBox.SelectedItem = s.Name;
-			//		if (!s.IsConnected && _lastStatus)//如果上次状态是已连接
-			//			Task.Run(() => s.Connect());//单独开个线程连防止连接时卡死界面
-			//	}
-			//	else PortComboBox.SelectedIndex = 0;
-
-			//	PortComboBox.Items.Clear();
-			//	foreach (var i in list)
-			//	{
-			//		PortComboBox.Items.Add(i);
-			//		if (i == s.Name)
-			//		{
-			//			PortComboBox.Text = i;
-			//			if (!s.IsConnected && _lastStatus)//如果上次状态是已连接
-			//				Task.Run(() => s.Connect());//单独开个线程连防止连接时卡死界面
-			//		}
-			//	}
-			//	//如果没有项目，自动显示第一个端口
-			//	if (PortComboBox.Text.Length == 0 && list.Length > 0)
-			//		PortComboBox.Text = list[0];
-			//});
-			//return true;
 		}
 
 		/// <summary>
@@ -220,5 +183,8 @@ namespace UsbScreen
 			else plugin.EnablePlugin((string)PluginComboBox.SelectedItem);
 			setting.LastPlugin = plugin.IsEnable ? (string)PluginComboBox.SelectedItem : "";
 		}
+
+		[System.Runtime.InteropServices.DllImport("gdi32.dll")]
+		public static extern bool DeleteObject(IntPtr hObject);
 	}
 }
