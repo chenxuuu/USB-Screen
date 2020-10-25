@@ -2,7 +2,7 @@
 using System.Drawing;
 using System.Drawing.Drawing2D;
 
-namespace AnalogDigitalClock
+namespace ClockAnalog0
 {
 	public class AnalogDigitalClock : IScreen
 	{
@@ -144,29 +144,18 @@ namespace AnalogDigitalClock
 			int M = Time.Minute;
 			int S = Time.Second;
 
-			// 绘制文字
-			Font scaleFont = new Font(new FontFamily("Bahnschrift Light"), 18, FontStyle.Regular, GraphicsUnit.Pixel);  // 字体
-			SolidBrush brush = new SolidBrush(ColorTranslator.FromHtml("#A0CA6924"));                         // 颜色
-			string date = $"{Time:yyyy年MM月dd日}";
-			SizeF fontSize = Canvas.MeasureString(date, scaleFont);
-			Canvas.DrawString(date, scaleFont, brush, -fontSize.Width / 2, -10 - fontSize.Height);
-			string week = $"{Time:dddd}";
-			fontSize = Canvas.MeasureString(week, scaleFont);
-			Canvas.DrawString(week, scaleFont, brush, -fontSize.Width / 2, 15);
-
 			// 时针
 			float angel = H * 30 + M * 30 / 60;
-			Brush handColor = new SolidBrush(ColorTranslator.FromHtml("#D0424C50"));
+			Brush handColor = new SolidBrush(ColorTranslator.FromHtml("#424C50"));
 			Canvas.RotateTransform(angel);
 			Canvas.FillEllipse(handColor, -10, -10, 20, 20);
-			Canvas.DrawArc(new Pen(handColor, 5), -24, -24, 48, 48, 270 - 8, -(30 - 8));
-			Canvas.DrawArc(new Pen(handColor, 5), -24, -24, 48, 48, 270 + 8, 30 - 8);
+			Canvas.FillPolygon(handColor, new PointF[] { new PointF(0, -15), new PointF(-10, -24), new PointF(0, -33), new PointF(10, -24) });
 			Canvas.FillPolygon(handColor, new PointF[] { new PointF(5, 15), new PointF(-5, 15), new PointF(-2, -60), new PointF(2, -60) });
 			Canvas.RotateTransform(-angel);
 
 			// 分针
 			angel = M * 6 + S * 6 / 60;
-			handColor = new SolidBrush(ColorTranslator.FromHtml("#D0A78E44"));
+			handColor = new SolidBrush(ColorTranslator.FromHtml("#A78E44"));
 			Canvas.RotateTransform(angel);
 			Canvas.FillEllipse(handColor, -8, -8, 16, 16);
 			Canvas.DrawEllipse(new Pen(handColor, 2), -6, -40, 12, 12);
@@ -176,7 +165,7 @@ namespace AnalogDigitalClock
 
 			// 秒针
 			angel = S * 6;
-			handColor = new SolidBrush(ColorTranslator.FromHtml("#D04C221B"));
+			handColor = new SolidBrush(ColorTranslator.FromHtml("#4C221B"));
 			Canvas.RotateTransform(angel);
 			Canvas.FillEllipse(handColor, -6, -6, 12, 12);
 			Canvas.FillPolygon(handColor, new PointF[] { new PointF(3, 20), new PointF(-3, 20), new PointF(-1, -90), new PointF(1, -90) });
@@ -188,5 +177,26 @@ namespace AnalogDigitalClock
 			PointF pointB = GetEndPoint(270 + angel, radius - (S % 5 == 0 ? 15 : 10));
 			Canvas.DrawLine(new Pen(Brushes.Red, (S % 5 == 0 ? 2 : 1)), pointA.X, pointA.Y, pointB.X, pointB.Y);
 		}
+	}
+	interface IScreen
+	{
+		/// <summary>
+		/// 使用指定的宽高初始化插件
+		/// </summary>
+		/// <param name="width">画布宽度</param>
+		/// <param name="height">画布高度</param>
+		void InitializeComponent(int width, int height);
+
+		/// <summary>
+		/// 获取插件数据
+		/// </summary>
+		/// <returns>图片，开始位置(x,y)，下次刷新等待时间</returns>
+		(Bitmap pic, int x, int y, long next) GetData();
+
+		/// <summary>
+		/// 停用插件
+		/// </summary>
+		/// <returns></returns>
+		void Dispose();
 	}
 }

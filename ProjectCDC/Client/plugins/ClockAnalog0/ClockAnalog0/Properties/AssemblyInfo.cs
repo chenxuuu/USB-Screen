@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // 有关程序集的一般信息由以下
 // 控制。更改这些特性值可修改
 // 与程序集关联的信息。
-[assembly: AssemblyTitle("AnalogDigitalClock")]
+[assembly: AssemblyTitle("ClockAnalog0")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("AnalogDigitalClock")]
+[assembly: AssemblyProduct("ClockAnalog0")]
 [assembly: AssemblyCopyright("Copyright ©  2020")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // 如果此项目向 COM 公开，则下列 GUID 用于类型库的 ID
-[assembly: Guid("f1a40407-0d4e-4ef3-8652-49091c534747")]
+[assembly: Guid("4b73b52d-1a1a-453a-a583-ce4c7ca40cfa")]
 
 // 程序集的版本信息由下列四个值组成: 
 //

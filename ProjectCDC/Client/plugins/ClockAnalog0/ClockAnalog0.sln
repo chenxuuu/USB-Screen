@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30615.102
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AnalogDigitalClock", "AnalogDigitalClock\AnalogDigitalClock.csproj", "{F1A40407-0D4E-4EF3-8652-49091C534747}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClockAnalog0", "ClockAnalog0\ClockAnalog0.csproj", "{4B73B52D-1A1A-453A-A583-CE4C7CA40CFA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,15 +11,15 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{F1A40407-0D4E-4EF3-8652-49091C534747}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F1A40407-0D4E-4EF3-8652-49091C534747}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F1A40407-0D4E-4EF3-8652-49091C534747}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F1A40407-0D4E-4EF3-8652-49091C534747}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4B73B52D-1A1A-453A-A583-CE4C7CA40CFA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4B73B52D-1A1A-453A-A583-CE4C7CA40CFA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4B73B52D-1A1A-453A-A583-CE4C7CA40CFA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4B73B52D-1A1A-453A-A583-CE4C7CA40CFA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {09F61448-FFD2-4A45-A4FA-E633B8AA01BC}
+		SolutionGuid = {CD20E777-643C-439E-98C0-DC8633DB7509}
 	EndGlobalSection
 EndGlobal
