@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30615.102
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClockAnalogTheme", "ClockAnalogTheme\ClockAnalogTheme.csproj", "{5643768D-BFE2-408A-8E5A-41799F899E38}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClockTheme", "ClockTheme\ClockTheme.csproj", "{B4751C58-F16F-4851-B56E-D6CA66BAED27}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,15 +11,15 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{5643768D-BFE2-408A-8E5A-41799F899E38}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5643768D-BFE2-408A-8E5A-41799F899E38}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5643768D-BFE2-408A-8E5A-41799F899E38}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5643768D-BFE2-408A-8E5A-41799F899E38}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B4751C58-F16F-4851-B56E-D6CA66BAED27}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B4751C58-F16F-4851-B56E-D6CA66BAED27}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B4751C58-F16F-4851-B56E-D6CA66BAED27}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B4751C58-F16F-4851-B56E-D6CA66BAED27}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {848E55AD-7D53-46F3-BF99-0FADF33D95F4}
+		SolutionGuid = {80262164-5DF7-48EA-9482-732018552EBB}
 	EndGlobalSection
 EndGlobal

@@ -6,9 +6,9 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 
-namespace ClockAnalogTheme
+namespace ClockTheme
 {
-	public class ClockAnalogTheme : IScreen
+	public class ClockTheme : IScreen
 	{
 		readonly string ThemePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $@"plugin\{Assembly.GetExecutingAssembly().GetName().Name}");
 		private int ScreenV { get; set; }
@@ -36,11 +36,8 @@ namespace ClockAnalogTheme
 				ScreenV = width;
 				ScreenH = height;
 				Directory.CreateDirectory(ThemePath);
-				string FilePath = Path.Combine(ThemePath, "ReadMe.md");
-				if (!File.Exists(FilePath))
-				{
-					File.WriteAllText(FilePath, "Version_1.0\n\nStackingOrder(堆叠顺序) must use png:\nBackground.png\nBackdrop.png\nDial.png\nPointer_Hour.png\nPointer_Minute.png\nPointer_Second.png");
-				}
+				ExportResources(ThemePath);
+				string FilePath;
 				string[] fileList = Images.Keys.ToArray();
 				foreach (string fileName in fileList)
 				{
@@ -74,6 +71,20 @@ namespace ClockAnalogTheme
 			Dial.Dispose();
 			Canvas.Dispose();
 			TimetNow.Dispose();
+		}
+
+		/// <summary>
+		/// 释放内嵌资源文件到目标文件夹
+		/// </summary>
+		/// <param name="path">文件夹路径</param>
+		private void ExportResources(string path)
+		{
+			Assembly ass = Assembly.GetExecutingAssembly();
+			string resourceName = "ReadMe.md";
+			using (StreamReader sr = new StreamReader(ass.GetManifestResourceStream($"ClockTheme.Resources.{resourceName}")))
+			{
+				File.WriteAllText(Path.Combine(path, resourceName), sr.ReadToEnd());
+			}
 		}
 
 		/// <summary>
