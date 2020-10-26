@@ -8,7 +8,7 @@
         WindowStartupLocation="CenterScreen" WindowStyle="None" AllowsTransparency="True"
         Height="270" Width="480" Background="#00000000" BorderBrush ="#20666666"
         Title="UsbScreen" SnapsToDevicePixels="True" Loaded="MainWindow_OnLoaded">
-    <Window.Resources>
+	<Window.Resources>
 		<ResourceDictionary>
 			<ResourceDictionary.MergedDictionaries>
 				<ResourceDictionary Source="/UsbScreen;component/Themes/TitleBarStyle.xaml"/>
@@ -27,12 +27,12 @@
 			</StackPanel>
 			<ProgressBar x:Name="progress" Height="2" VerticalAlignment="Bottom" BorderThickness="0" Background="{x:Null}"/>
 		</Grid>
-		<Grid Background="#FFFAFAFA">
+		<Grid Background="#FFFAFAFA" Width="480" Height="240">
 			<Grid.ColumnDefinitions>
 				<ColumnDefinition Width="*"/>
 				<ColumnDefinition Width="*"/>
 			</Grid.ColumnDefinitions>
-			<Image Name="PriviewImage"/>
+			<Image Grid.Column="0" Name="PriviewImage"/>
 			<Grid Grid.Column="1">
 				<Grid.RowDefinitions>
 					<RowDefinition Height="*"/>
