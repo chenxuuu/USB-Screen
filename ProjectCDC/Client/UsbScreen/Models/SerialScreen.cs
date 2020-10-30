@@ -243,7 +243,7 @@ namespace UsbScreen.Models
 					bgraList = bgraList.Take(8 * 4).ToList();
 				}
 				// 像素不是8的倍数,补齐数量
-				if ((bgraList.Count % (8*4)) != 0)
+				if ((bgraList.Count % (8 * 4)) != 0)
 				{
 					bgraList.AddRange(bgraList.Take((8 * 4) - (bgraList.Count % (8 * 4))));
 				}

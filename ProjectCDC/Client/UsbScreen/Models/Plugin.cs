@@ -28,7 +28,7 @@ namespace UsbScreen.Models
 		/// <summary>
 		/// 初始化插件
 		/// </summary>
-		public bool Init(params object[] arg)
+		public bool Init()
 		{
 			PluginType.GetMethod("InitializeComponent").Invoke(Plugin, new object[] { 240, 240 });
 			return true;
