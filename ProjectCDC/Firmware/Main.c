@@ -6,10 +6,9 @@
 #include "LCD.h"
 #include "UsbManager.h"
 
-sbit	Bg_Led1	= P3^0;
-sbit	Bg_Led2 = P3^3;
-sbit	Bg_Led3 = P1^1;
-
+sbit	K1	= P3^0;
+sbit	K2	= P1^1;
+sbit	K3	= P3^3;
 
 /*******************************************************************************
 * Function Name	: IOport_Init
@@ -27,6 +26,19 @@ void IOport_Init(void)
 }
 
 /*******************************************************************************
+* Function Name	: PWM_Init
+* Description	: PWM初始化(PWM2输出引脚为P3.4)
+* Input			: None
+* Return		: None
+*******************************************************************************/
+void PWM_Init()
+{
+	PWM_CK_SE	= 0x01;			// PWM时钟分频设置
+	PWM_DATA2	= 0x7F;			// PWM2占空比设置(占空比=PWM_DATA2/256)
+	PWM_CTRL	= bPWM2_OUT_EN;	// PWM2输出使能
+}
+
+/*******************************************************************************
 * Function Name	: main
 * Description	: 主函数
 * Input			: None
@@ -35,6 +47,7 @@ void IOport_Init(void)
 void main(void)
 {
 	setFsys();					// 初始化系统时钟
+	PWM_Init();					// 初始化PWM功能
 	USB_DeviceInit();			// 初始化USB功能
 	EA  = 1;					// 使能单片机全局中断
 	IOport_Init();				// 初始化IO口状态

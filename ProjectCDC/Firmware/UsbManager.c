@@ -88,7 +88,11 @@ void USB_DeviceInterrupt(void) interrupt INT_NO_USB
 			{
 				UEP3_CTRL = UEP3_CTRL & ~MASK_UEP_R_RES | UEP_R_RES_NAK;
 			}
-			if(USB_RX_LEN == 1 && (*((PUINT8X)USBwLength) == 0xB1))
+			if (USB_RX_LEN == 2 && (*((PUINT8X)USBwLength) == 0xF1))		// 亮度调节指令
+			{
+				PWM_DATA2 = *((PUINT8X)(USBwLength+1));	// 修改PWM2占空比
+			}
+			if (USB_RX_LEN == 1 && (*((PUINT8X)USBwLength) == 0xB1))
 			{
 				((void(code *)(void))IAP_CODE_ADDR)();	// 跳转到Bootloader
 			}
