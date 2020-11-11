@@ -29,7 +29,13 @@ namespace UsbScreen.Models
 		/// <summary>
 		/// 屏幕亮度
 		/// </summary>
-		public byte FlashLightValue { get; set; } = 255;
+		public byte FlashLightValue
+		{
+			set
+			{
+				SendBytes(new byte[] { 0xC0, value }, 0, 2);
+			}
+		}
 
 		/// <summary>
 		/// 串口对象
@@ -209,8 +215,6 @@ namespace UsbScreen.Models
 		{
 			// 禁止数据显示范围超过屏幕边界
 			if (x >= width || y >= height) return false;
-			// 设置屏幕亮度
-			SendBytes(new byte[] { 0xF1, FlashLightValue }, 0, 2);
 			// 停止的位置，防止超出画面
 			int ex = (pic.Width + x > width ? width : pic.Width + x) - 1;
 			int ey = (pic.Height + y > height ? height : pic.Height + y) - 1;

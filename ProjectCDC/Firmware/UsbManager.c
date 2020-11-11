@@ -88,12 +88,6 @@ void USB_DeviceInterrupt(void) interrupt INT_NO_USB
 			{
 				((void(code *)(void))IAP_CODE_ADDR)();							// 跳转到Bootloader
 			}
-			else if (USB_RX_LEN == 2 && (*((PUINT8X)USBwLength) == 0xF1))		// 亮度调节指令
-			{
-				PWM_DATA2 = *((PUINT8X)(USBwLength+1));							// 修改PWM2占空比
-				DMA_STATUS &= UDEV_CTRL&bUD_GP_BIT ? (~0x22) : (~0x11);			// 本条指令不传给SPI
-				break;
-			}
 			if ((DMA_STATUS&0x0F) == 0x03)	// 缓冲区满，暂停接收
 			{
 				UEP3_CTRL = UEP3_CTRL & ~MASK_UEP_R_RES | UEP_R_RES_NAK;

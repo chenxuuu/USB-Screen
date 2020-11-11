@@ -176,6 +176,10 @@ void LCD_SET(PUINT8XV p)
 			mode = len&0x80;
 			while(S0_FREE==0); SPI_DC=1;
 		}
+		else if(len == 0xC0) // 亮度调节命令
+		{
+			PWM_DATA2 = *p;
+		}
 		else ROM_DATA_L=*p;
 		len &= 0x3F;
 		// 写LCD数据内容
@@ -205,7 +209,6 @@ void LCD_SET(PUINT8XV p)
 				--len;
 			}
 		}
-		
 	}
 	XBUS_AUX &= ~bDPTR_AUTO_INC;		// 禁用MOVX_@DPTR指令执行后DPTR自动INC
 }
