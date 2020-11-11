@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
@@ -23,6 +24,8 @@ namespace UsbScreen
 		SerialScreen s { get; set; } = new SerialScreen();
 		Plugin plugin { get; set; } = new Plugin();
 		BitmapData ShowData { get; set; } = new BitmapData();
+		readonly int[] AddNumList = new int[] { 85, 25, 24, 19, 141 };
+		readonly int[] DecNumList = new int[] { 87, 23, 26, 20, 143 };
 		public MainWindow()
 		{
 			InitializeComponent();
@@ -32,6 +35,13 @@ namespace UsbScreen
 			MinSize.Click += delegate { this.WindowState = WindowState.Minimized; };
 			// 注册窗口关闭按钮
 			AppExit.Click += delegate { this.Close(); };
+			// 注册亮度调节
+			FlashLight.ValueChanged += delegate { s.FlashLightValue = (byte)FlashLight.Value; };
+			FlashLight.MouseWheel += (sender, e) => { FlashLight.Value += e.Delta > 0 ? 1 : -1; };
+			FlashLight.KeyDown += (sender, e) => {
+				if (AddNumList.Contains((int)e.Key)) ++FlashLight.Value;
+				if (DecNumList.Contains((int)e.Key)) --FlashLight.Value;
+			};
 		}
 
 		private void MainWindow_OnLoaded(object sender, RoutedEventArgs e)
@@ -149,10 +159,8 @@ namespace UsbScreen
 				_lastStatus = false;
 				return;
 			}
-			if (PortComboBox.SelectedItem == null)
-				return;
-			if (((string)PortComboBox.SelectedItem).Length > 0)
-				s.Connect((string)PortComboBox.SelectedItem);
+			if (PortComboBox.SelectedItem == null) return;
+			if (((string)PortComboBox.SelectedItem).Length > 0) s.Connect((string)PortComboBox.SelectedItem);
 			setting.LastPort = (string)PortComboBox.SelectedItem;//设置里的串口刷新下
 			_lastStatus = true;
 		}

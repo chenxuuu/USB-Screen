@@ -26,6 +26,10 @@ namespace UsbScreen.Models
 		/// 屏幕分辨率高度
 		/// </summary>
 		private const int height = 240;
+		/// <summary>
+		/// 屏幕亮度
+		/// </summary>
+		public byte FlashLightValue { get; set; } = 255;
 
 		/// <summary>
 		/// 串口对象
@@ -203,8 +207,10 @@ namespace UsbScreen.Models
 		/// <returns>是否成功执行</returns>
 		public bool Show(Bitmap pic, int x = 0, int y = 0, bool tc = false)
 		{
-			if (x >= width || y >= height) return false;    // 超过屏幕高度宽度
-
+			// 禁止数据显示范围超过屏幕边界
+			if (x >= width || y >= height) return false;
+			// 设置屏幕亮度
+			SendBytes(new byte[] { 0xF1, FlashLightValue }, 0, 2);
 			// 停止的位置，防止超出画面
 			int ex = (pic.Width + x > width ? width : pic.Width + x) - 1;
 			int ey = (pic.Height + y > height ? height : pic.Height + y) - 1;

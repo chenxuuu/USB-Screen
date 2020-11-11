@@ -32,7 +32,9 @@
 				<ColumnDefinition Width="*"/>
 				<ColumnDefinition Width="*"/>
 			</Grid.ColumnDefinitions>
-			<Image Grid.Column="0" Name="PriviewImage"/>
+			<Grid Grid.Column="0" Background="DarkGray">
+				<Image Name="PriviewImage"/>
+			</Grid>
 			<Grid Grid.Column="1">
 				<Grid.RowDefinitions>
 					<RowDefinition Height="*"/>
@@ -45,15 +47,21 @@
 					<RowDefinition Height="*"/>
 					<RowDefinition Height="*"/>
 				</Grid.RowDefinitions>
-				<StackPanel Orientation="Horizontal" Margin="0,2">
-					<TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,0,0,0">设备：</TextBlock>
-					<ComboBox Name="PortComboBox" Width="130" Margin="3,0"></ComboBox>
-					<Button Name="ConnectButton" Margin="3,0" Width="50" Click="ConnectButton_OnClick" Content="{Binding IsConnected,Converter={StaticResource ConnectOrDisconnectConverter}}"/>
-				</StackPanel>
-				<TextBlock Text="插件列表：" Grid.Row="5" VerticalAlignment="Center" Margin="5,0"/>
-				<Button Name="RefreshPluginButton" Content="刷新插件列表" Grid.Row="5" Margin="5,2" Width="80" HorizontalAlignment="Right"
-                    IsEnabled="{Binding IsEnable,Converter={StaticResource boolNotConverter}}" Click="RefreshPluginButton_Click"/>
-				<ComboBox Name="PluginComboBox" Grid.Row="6" Margin="5,2"/>
+				<DockPanel Grid.Row="0" Height="21">
+					<TextBlock VerticalAlignment="Center" Margin="5,0" Text="设备:"/>
+					<Button Name="ConnectButton" DockPanel.Dock="Right" Margin="5,0" Width="50" Click="ConnectButton_OnClick" Content="{Binding IsConnected,Converter={StaticResource ConnectOrDisconnectConverter}}"/>
+					<ComboBox Name="PortComboBox" />
+				</DockPanel>
+				<DockPanel Grid.Row="1" Height="21">
+					<TextBlock VerticalAlignment="Center" Margin="5,0" Text="亮度:"/>
+					<TextBlock VerticalAlignment="Center" Margin="5,0" Width="21" DockPanel.Dock="Right" Text="{Binding Value, ElementName=FlashLight}" FlowDirection="RightToLeft"/>
+					<Slider VerticalAlignment="Center" x:Name="FlashLight" Maximum="255" Value="255" TickFrequency="1" IsSnapToTickEnabled="True" SmallChange="1"/>
+				</DockPanel>
+				<DockPanel Grid.Row="5" Height="21">
+					<Button x:Name="RefreshPluginButton" DockPanel.Dock="Right" Content="刷新插件列表" Margin="5,0" Width="80" Click="RefreshPluginButton_Click" IsEnabled="{Binding IsEnable,Converter={StaticResource boolNotConverter}}"/>
+					<TextBlock VerticalAlignment="Center" Margin="5,0" Text="插件列表："/>
+				</DockPanel>
+				<ComboBox x:Name="PluginComboBox" Grid.Row="6" Margin="5,0" Height="21"/>
 				<Grid Grid.Row="7" Margin="0,0" Grid.RowSpan="2">
 					<Grid.ColumnDefinitions>
 						<ColumnDefinition Width="*"/>
