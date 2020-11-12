@@ -67,7 +67,7 @@ void USB_DeviceInterrupt(void) interrupt INT_NO_USB
 	static PUINT8C	pDescr;			// 缓存USB待发送数据指针
 	static UINT16	USBwLength;		// 缓存USB下一阶段需要上传的数据长度
 	static UINT8	SetupReq;		// 缓存USB描述符的请求类型
-	static UINT8	length;			// 缓存USB待发送数据长度
+	UINT8	length;					// 缓存USB待发送数据长度
 
 	if (UIF_TRANSFER)															// USB传输完成中断标志
 	{
@@ -76,15 +76,15 @@ void USB_DeviceInterrupt(void) interrupt INT_NO_USB
 			if (U_TOG_OK == 0) break;
 			if (UDEV_CTRL&bUD_GP_BIT)
 			{
-				USBwLength += 0x40;
+				SetupReq = Ep4Buffer[0];	// Setup事务完成后不再需要此变量,所以这里可以复用
 				DMA_STATUS |= USB_RX_LEN==64 ? 0x22 : 0x02;
 			}
 			else
 			{
-				USBwLength = UEP3_DMA;
+				SetupReq = Ep3Buffer[0];
 				DMA_STATUS |= USB_RX_LEN==64 ? 0x11 : 0x01;
 			}
-			if (USB_RX_LEN == 1 && (*((PUINT8X)USBwLength) == 0xB1))			// Bootloader跳转命令
+			if (USB_RX_LEN == 1 && (SetupReq == 0xB1))							// Bootloader跳转命令
 			{
 				((void(code *)(void))IAP_CODE_ADDR)();							// 跳转到Bootloader
 			}

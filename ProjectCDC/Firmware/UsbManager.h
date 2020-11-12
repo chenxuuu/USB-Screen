@@ -17,9 +17,10 @@
 // USB数据缓冲区结构体{EP0[0x40],EP1[0x40],EP2[0x40],EP3[0x80]}
 typedef struct _UsbBuffer{
 	UINT8 EP0[0x40];	// 端点0 OUT&IN 64byte收发共用缓冲区
-	UINT8 EP1[0x40];	// 端点1 OUT&IN 64byte发送缓冲区
-	UINT8 EP2[0x40];	// 端点2 OUT&IN 64byte发送缓冲区
-	UINT8 EP3[0x80];	// 端点3 OUT&IN 64byte*2接收缓冲区
+	UINT8 EP1[0x40];	// 端点1 IN 64byte发送缓冲区
+	UINT8 EP2[0x40];	// 端点2 IN 64byte发送缓冲区
+	UINT8 EP3[0x40];	// 端点3 OUT 64byte*2接收缓冲区(双缓冲接收)
+	UINT8 EP4[0x40];	//
 } UsbBuffer;
 
 extern xdata UsbBuffer Buffer;

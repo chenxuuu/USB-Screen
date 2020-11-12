@@ -57,7 +57,7 @@ void main(void)
 		if(DMA_STATUS & 0x01)
 		{
 			ROM_DATA_H = DMA_STATUS&0x10;
-			LCD_SET((PUINT8X)UEP3_DMA);
+			LCD_SET(Ep3Buffer);
 			DMA_STATUS &= (~0x11);
 			if((UDEV_CTRL&bUD_GP_BIT) == 0) 
 			{
@@ -67,7 +67,7 @@ void main(void)
 		else if(DMA_STATUS & 0x02)
 		{
 			ROM_DATA_H = DMA_STATUS&0x20;
-			LCD_SET((PUINT8X)(UEP3_DMA+0x40));
+			LCD_SET(Ep4Buffer);
 			DMA_STATUS &= (~0x22);
 			if((UDEV_CTRL&bUD_GP_BIT) != 0) 
 			{
