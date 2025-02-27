@@ -9,7 +9,7 @@ PC monitor screen, only cost $5.
 
 > only Chinese readme now.
 
-<img height="300" src="https://source.papapoi.com/wp-content/uploads/2020/10/pic-scaled.jpg"/>
+<img height="300" src="https://www.chenxublog.com/wp-content/uploads/2020/10/pic-scaled.jpg"/>
 
 ## 硬件
 
